@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <h2>Printable Report</h2>
+  <a href="{{ url_for('reports', type=report_type) }}" class="btn btn-secondary">Back</a>
+</div>
+<p class="text-muted">Use your browser's Print feature to save as PDF.</p>
+
+<div class="table-responsive">
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Serial</th>
+        <th>Purchase Date</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+        <th>Province</th>
+        <th>District</th>
+        <th>OS</th>
+        <th>Antivirus</th>
+        <th>Office</th>
+        <th>EOL Date</th>
+        <th>EOL Status</th>
+        <th>Inspected</th>
+        <th>Inspection Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assets %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ a.name }}</td>
+        <td>{{ a.type }}</td>
+        <td>{{ a.serial_number }}</td>
+        <td>{{ a.purchase_date or '-' }}</td>
+        <td>{{ a.status }}</td>
+        <td>{{ a.assigned_to or '-' }}</td>
+        <td>{{ a.province or '-' }}</td>
+        <td>{{ a.district or '-' }}</td>
+        <td>{{ a.os_name or '-' }}</td>
+        <td>{{ a.antivirus_name or '-' }}</td>
+        <td>{{ a.office_name or '-' }}</td>
+        <td>{{ a.eol_date or '-' }}</td>
+        <td>{{ a.eol_status or '-' }}</td>
+        <td>{{ 'Yes' if a.inspected_by_ict else 'No' }}</td>
+        <td>{{ a.inspection_date or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="16" class="text-center">No data</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

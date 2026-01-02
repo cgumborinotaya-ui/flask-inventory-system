@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Edit User</h2>
+  <a href="{{ url_for('users') }}" class="btn btn-secondary">Back</a>
+</div>
+
+<form method="POST">
+  <div class="mb-3">
+    <label class="form-label">Username</label>
+    <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Role</label>
+    <select name="role" id="role" class="form-select" required onchange="adjustLocationRequirements()">
+      <option value="IT" {% if user.role=='IT' %}selected{% endif %}>IT</option>
+      <option value="Admin" {% if user.role=='Admin' %}selected{% endif %}>Admin</option>
+      <option value="AdminProvince" {% if user.role=='AdminProvince' %}selected{% endif %}>Admin (Province)</option>
+      <option value="AdminDistrict" {% if user.role=='AdminDistrict' %}selected{% endif %}>Admin (District)</option>
+      <option value="Viewer" {% if user.role=='Viewer' %}selected{% endif %}>Viewer</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Province</label>
+    <select name="province" id="province" class="form-select" onchange="updateDistricts(); adjustLocationRequirements()">
+      <option value="">None</option>
+      <option value="Head Office" {% if user.province=='Head Office' %}selected{% endif %}>Head Office</option>
+      <option value="Bulawayo" {% if user.province=='Bulawayo' %}selected{% endif %}>Bulawayo</option>
+      <option value="Harare" {% if user.province=='Harare' %}selected{% endif %}>Harare</option>
+      <option value="Manicaland" {% if user.province=='Manicaland' %}selected{% endif %}>Manicaland</option>
+      <option value="Mashonaland Central" {% if user.province=='Mashonaland Central' %}selected{% endif %}>Mashonaland Central</option>
+      <option value="Mashonaland East" {% if user.province=='Mashonaland East' %}selected{% endif %}>Mashonaland East</option>
+      <option value="Mashonaland West" {% if user.province=='Mashonaland West' %}selected{% endif %}>Mashonaland West</option>
+      <option value="Masvingo" {% if user.province=='Masvingo' %}selected{% endif %}>Masvingo</option>
+      <option value="Matabeleland North" {% if user.province=='Matabeleland North' %}selected{% endif %}>Matabeleland North</option>
+      <option value="Matabeleland South" {% if user.province=='Matabeleland South' %}selected{% endif %}>Matabeleland South</option>
+      <option value="Midlands" {% if user.province=='Midlands' %}selected{% endif %}>Midlands</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">District</label>
+    <select name="district" id="district" class="form-select" data-selected="{{ user.district or '' }}">
+      <option value="">None</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">New Password (optional)</label>
+    <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current" minlength="8">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input type="email" class="form-control" name="email" value="{{ user.email or '' }}">
+  </div>
+  <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>
+
+<script>
+  const districtsByProvince = {
+      "Head Office": [],
+      "Bulawayo": ["Bulawayo District"],
+      "Harare": ["Harare District"],
+      "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+      "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+      "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+      "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+      "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+      "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+      "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+      "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+  };
+  function updateDistricts() {
+      const provinceSelect = document.getElementById("province");
+      const districtSelect = document.getElementById("district");
+      const selectedProvince = provinceSelect.value;
+      const currentDistrict = districtSelect.dataset.selected;
+      districtSelect.innerHTML = '<option value="">None</option>';
+      if (selectedProvince === 'Head Office') {
+          districtSelect.disabled = true;
+          return;
+      }
+      districtSelect.disabled = false;
+      if (selectedProvince && districtsByProvince[selectedProvince]) {
+          districtsByProvince[selectedProvince].forEach(district => {
+              const option = document.createElement("option");
+              option.value = district;
+              option.textContent = district;
+              if (district === currentDistrict) option.selected = true;
+              districtSelect.appendChild(option);
+          });
+      }
+  }
+  function adjustLocationRequirements() {
+      const role = document.getElementById("role").value;
+      const province = document.getElementById("province");
+      const district = document.getElementById("district");
+      province.disabled = false;
+      district.disabled = false;
+      if (role === 'AdminProvince') {
+          const selectedProvince = province.value;
+          const all = districtsByProvince[selectedProvince] || [];
+          district.innerHTML = '';
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = all.length ? ('All districts: ' + all.join(', ')) : 'All districts';
+          opt.selected = true;
+          district.appendChild(opt);
+          district.disabled = true;
+      } else if (role === 'AdminDistrict') {
+          province.querySelector('option[value="Head Office"]').disabled = true;
+          district.disabled = false;
+      } else {
+          province.querySelector('option[value="Head Office"]').disabled = false;
+      }
+  }
+  document.addEventListener('DOMContentLoaded', () => { updateDistricts(); adjustLocationRequirements(); });
+</script>
+{% endblock %}

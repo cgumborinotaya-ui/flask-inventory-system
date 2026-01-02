@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>User Management</h2>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">Create New User</div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required minlength="8">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select name="role" id="role" class="form-select" required onchange="adjustLocationRequirements()">
+              <option value="IT">IT</option>
+              <option value="Admin">Admin</option>
+              <option value="AdminProvince">Admin (Province)</option>
+              <option value="AdminDistrict">Admin (District)</option>
+              <option value="Viewer">Viewer</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Province</label>
+            <select name="province" id="province" class="form-select" onchange="updateDistricts(); adjustLocationRequirements()">
+              <option value="">None</option>
+              <option value="Head Office">Head Office</option>
+              <option value="Bulawayo">Bulawayo</option>
+              <option value="Harare">Harare</option>
+              <option value="Manicaland">Manicaland</option>
+              <option value="Mashonaland Central">Mashonaland Central</option>
+              <option value="Mashonaland East">Mashonaland East</option>
+              <option value="Mashonaland West">Mashonaland West</option>
+              <option value="Masvingo">Masvingo</option>
+              <option value="Matabeleland North">Matabeleland North</option>
+              <option value="Matabeleland South">Matabeleland South</option>
+              <option value="Midlands">Midlands</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">District</label>
+            <select name="district" id="district" class="form-select">
+              <option value="">None</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Create User</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">Existing Users</div>
+      <div class="card-body">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Province</th>
+              <th>District</th>
+              <th>Status</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td>{{ u.id }}</td>
+              <td>{{ u.username }}</td>
+              <td>{{ u.role }}</td>
+              <td>{{ u.province or '-' }}</td>
+              <td>{{ u.district or '-' }}</td>
+              <td>
+                {% if u.active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+              </td>
+              <td>{{ u.email or '-' }}</td>
+              <td>
+                <a class="btn btn-sm btn-info" href="{{ url_for('edit_user', id=u.id) }}">Edit</a>
+                <form method="POST" action="{{ url_for('toggle_user_active', id=u.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-sm {% if u.active %}btn-warning{% else %}btn-success{% endif %}">
+                    {% if u.active %}Deactivate{% else %}Activate{% endif %}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin_reset_user', id=u.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-secondary">Send Reset</button>
+                </form>
+                <form method="POST" action="{{ url_for('delete_user', id=u.id) }}" style="display:inline;" onsubmit="return confirm('Delete this user?')">
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center">No users</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const districtsByProvince = {
+      "Head Office": [],
+      "Bulawayo": ["Bulawayo District"],
+      "Harare": ["Harare District"],
+      "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+      "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+      "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+      "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+      "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+      "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+      "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+      "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+  };
+  function updateDistricts() {
+      const provinceSelect = document.getElementById("province");
+      const districtSelect = document.getElementById("district");
+      const selectedProvince = provinceSelect.value;
+      districtSelect.innerHTML = '<option value="">None</option>';
+      if (selectedProvince === 'Head Office') {
+          districtSelect.disabled = true;
+          return;
+      }
+      districtSelect.disabled = false;
+      if (selectedProvince && districtsByProvince[selectedProvince]) {
+          districtsByProvince[selectedProvince].forEach(district => {
+              const option = document.createElement("option");
+              option.value = district;
+              option.textContent = district;
+              districtSelect.appendChild(option);
+          });
+      }
+  }
+  function adjustLocationRequirements() {
+      const role = document.getElementById("role").value;
+      const province = document.getElementById("province");
+      const district = document.getElementById("district");
+      // Reset states
+      province.required = false;
+      district.required = false;
+      province.disabled = false;
+      district.disabled = false;
+      if (role === 'AdminProvince') {
+          province.required = true;
+          const selectedProvince = province.value;
+          const all = districtsByProvince[selectedProvince] || [];
+          district.innerHTML = '';
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = all.length ? ('All districts: ' + all.join(', ')) : 'All districts';
+          opt.selected = true;
+          district.appendChild(opt);
+          district.disabled = true;
+      } else if (role === 'AdminDistrict') {
+          province.required = true;
+          district.required = true;
+          province.querySelector('option[value="Head Office"]').disabled = true;
+      } else {
+          province.querySelector('option[value="Head Office"]').disabled = false;
+      }
+  }
+  document.addEventListener('DOMContentLoaded', () => { updateDistricts(); adjustLocationRequirements(); });
+</script>
+{% endblock %}

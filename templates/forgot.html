@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2 class="mb-3">Forgot Password</h2>
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-control" name="username" placeholder="Enter username or email">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" name="email" placeholder="Optional if username provided">
+      </div>
+      <button type="submit" class="btn btn-primary">Request Reset</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

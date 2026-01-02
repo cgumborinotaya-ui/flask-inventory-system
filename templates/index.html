@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3 class="mb-3">Dashboard</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card card-kpi kpi-blue p-3">
+      <div class="value">{{ stats.total }}</div>
+      <div class="pct">Total</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-kpi kpi-yellow p-3">
+      <div class="value">{{ stats.computers }}</div>
+      <div class="pct">Computers</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-kpi kpi-green p-3">
+      <div class="value">{{ stats.mobile }}</div>
+      <div class="pct">Mobile (Cellphones/Tablets)</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-kpi kpi-red p-3">
+      <div class="value">{{ stats.uninspected }}</div>
+      <div class="pct">Uninspected</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Assets by Province</div>
+      <div class="card-body">
+        {% for prov, count in top_provinces %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between"><strong>{{ prov }}</strong><span>{{ count }}</span></div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-success" role="progressbar" style="width: {{ (count / (stats.total or 1) * 100)|round(1) }}%"></div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-muted">No provincial data</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Assets by Type</div>
+      <div class="card-body">
+        {% for t, cnt in type_counts.items() %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between"><strong>{{ t }}</strong><span>{{ cnt }}</span></div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (cnt / (stats.total or 1) * 100)|round(1) }}%"></div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-muted">No type data</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" id="assetTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="computers-tab" data-bs-toggle="tab" data-bs-target="#computers" type="button" role="tab" aria-controls="computers" aria-selected="true">Computers (Laptops, Desktops, All-in-One)</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="peripherals-tab" data-bs-toggle="tab" data-bs-target="#peripherals" type="button" role="tab" aria-controls="peripherals" aria-selected="false">Peripherals & Others</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="assetTabsContent">
+    <!-- Computers Tab -->
+    <div class="tab-pane fade show active" id="computers" role="tabpanel" aria-labelledby="computers-tab">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                 <thead>
+                     <tr>
+                         <th>ID</th>
+                         <th>Name</th>
+                         <th>Type</th>
+                         <th>OS</th>
+                         <th>Antivirus</th>
+                         <th>Office</th>
+                         <th>Location</th>
+                         <th>Lifecycle</th>
+                         <th>Status</th>
+                         <th>Assigned To</th>
+                         <th>Inspection</th>
+                         <th>Actions</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     {% for asset in assets %}
+                     {% if asset.type in ['Laptop', 'Desktop', 'All-in-One'] %}
+                     <tr>
+                         <td>{{ asset.id }}</td>
+                         <td>{{ asset.name }}</td>
+                         <td>{{ asset.type }}</td>
+                         <td>{{ asset.os_name or '-' }}</td>
+                         <td>
+                             {% if asset.antivirus_name %}
+                                 {{ asset.antivirus_name }}
+                                 {% if asset.is_antivirus_expired %}
+                                     <br><span class="badge bg-danger">Expired</span>
+                                 {% elif asset.antivirus_license_date %}
+                                      <br><small class="text-muted">Lic: {{ asset.antivirus_license_date }}</small>
+                                 {% endif %}
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             {% if asset.office_name %}
+                                 {{ asset.office_name }}
+                                 {% if asset.is_office_expired %}
+                                     <br><span class="badge bg-danger">Expired</span>
+                                 {% elif asset.office_license_date %}
+                                     <br><small class="text-muted">Lic: {{ asset.office_license_date }}</small>
+                                 {% endif %}
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             {% if asset.province or asset.district %}
+                                 <small>
+                                 {{ asset.province or '' }}<br>
+                                 {{ asset.district or '' }}
+                                 </small>
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             {% if asset.eol_date %}
+                                 <small>EOL: {{ asset.eol_date }}</small><br>
+                                 {% if asset.is_eol_passed %}
+                                     <span class="badge bg-danger">Past EOL</span>
+                                 {% elif asset.is_eol_approaching %}
+                                     <span class="badge bg-warning text-dark">Approaching EOL</span>
+                                 {% endif %}
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
+                                 {{ asset.status }}
+                             </span>
+                         </td>
+                         <td>{{ asset.assigned_to }}</td>
+                         <td>
+                             {% if asset.inspected_by_ict %}
+                                 <span class="badge bg-success">Inspected</span>
+                                 {% if asset.inspection_date %}<br><small class="text-muted">{{ asset.inspection_date }}</small>{% endif %}
+                             {% else %}
+                                 <span class="badge bg-secondary">Not inspected</span>
+                             {% endif %}
+                         </td>
+                         <td>
+                             <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                             <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-info">View</a>
+                             {% if current_role!='AdminDistrict' %}
+                             <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                             </form>
+                             {% endif %}
+                         </td>
+                     </tr>
+                     {% endif %}
+                     {% endfor %}
+                 </tbody>
+             </table>
+         </div>
+     </div>
+
+    <!-- Peripherals Tab -->
+    <div class="tab-pane fade" id="peripherals" role="tabpanel" aria-labelledby="peripherals-tab">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                 <thead>
+                     <tr>
+                         <th>ID</th>
+                         <th>Name</th>
+                         <th>Type</th>
+                         <th>Location</th>
+                         <th>Lifecycle</th>
+                         <th>Status</th>
+                         <th>Assigned To</th>
+                         <th>Inspection</th>
+                         <th>Actions</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     {% for asset in assets %}
+                     {% if asset.type not in ['Laptop', 'Desktop', 'All-in-One'] %}
+                     <tr>
+                         <td>{{ asset.id }}</td>
+                         <td>{{ asset.name }}</td>
+                         <td>{{ asset.type }}</td>
+                         <td>
+                             {% if asset.province or asset.district %}
+                                 <small>
+                                 {{ asset.province or '' }}<br>
+                                 {{ asset.district or '' }}
+                                 </small>
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             {% if asset.type in ['Cellphone', 'Tablet'] and asset.eol_date %}
+                                 <small>EOL: {{ asset.eol_date }}</small><br>
+                                 {% if asset.is_eol_passed %}
+                                     <span class="badge bg-danger">Past EOL</span>
+                                 {% elif asset.is_eol_approaching %}
+                                     <span class="badge bg-warning text-dark">Approaching EOL</span>
+                                 {% endif %}
+                             {% else %}
+                                 -
+                             {% endif %}
+                         </td>
+                         <td>
+                             <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
+                                 {{ asset.status }}
+                             </span>
+                         </td>
+                         <td>{{ asset.assigned_to }}</td>
+                         <td>
+                             {% if asset.inspected_by_ict %}
+                                 <span class="badge bg-success">Inspected</span>
+                                 {% if asset.inspection_date %}<br><small class="text-muted">{{ asset.inspection_date }}</small>{% endif %}
+                             {% else %}
+                                 <span class="badge bg-secondary">Not inspected</span>
+                             {% endif %}
+                         </td>
+                         <td>
+                             <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                             <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-info">View</a>
+                             {% if current_role!='AdminDistrict' %}
+                             <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                             </form>
+                             {% endif %}
+                         </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

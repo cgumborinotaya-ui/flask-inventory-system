@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Reports</h2>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+</div>
+
+<form method="GET" action="{{ url_for('reports') }}" class="row g-3 mb-3">
+  <div class="col-md-4">
+    <label for="report_type" class="form-label">Report Type</label>
+    <select id="report_type" name="type" class="form-select" onchange="this.form.submit()">
+      <option value="all" {% if report_type=='all' %}selected{% endif %}>All Assets</option>
+      <option value="computers_health" {% if report_type=='computers_health' %}selected{% endif %}>Computers Health</option>
+      <option value="approaching_eol" {% if report_type=='approaching_eol' %}selected{% endif %}>Approaching EOL</option>
+      <option value="past_eol" {% if report_type=='past_eol' %}selected{% endif %}>Past EOL</option>
+      <option value="inspections" {% if report_type=='inspections' %}selected{% endif %}>Inspected Assets</option>
+      <option value="uninspected" {% if report_type=='uninspected' %}selected{% endif %}>Uninspected Assets</option>
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label for="assigned_to" class="form-label">Assigned To (person)</label>
+    <input type="text" id="assigned_to" name="assigned_to" class="form-control" value="{{ request.args.get('assigned_to','') }}">
+  </div>
+  <div class="col-md-4">
+    <label for="province" class="form-label">Province</label>
+    <select id="province" name="province" class="form-select" onchange="updateDistricts()" {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
+      {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
+        <option value="">Any</option>
+        <option value="Head Office" {% if request.args.get('province')=='Head Office' %}selected{% endif %}>Head Office</option>
+        <option value="Bulawayo" {% if request.args.get('province')=='Bulawayo' %}selected{% endif %}>Bulawayo</option>
+        <option value="Harare" {% if request.args.get('province')=='Harare' %}selected{% endif %}>Harare</option>
+        <option value="Manicaland" {% if request.args.get('province')=='Manicaland' %}selected{% endif %}>Manicaland</option>
+        <option value="Mashonaland Central" {% if request.args.get('province')=='Mashonaland Central' %}selected{% endif %}>Mashonaland Central</option>
+        <option value="Mashonaland East" {% if request.args.get('province')=='Mashonaland East' %}selected{% endif %}>Mashonaland East</option>
+        <option value="Mashonaland West" {% if request.args.get('province')=='Mashonaland West' %}selected{% endif %}>Mashonaland West</option>
+        <option value="Masvingo" {% if request.args.get('province')=='Masvingo' %}selected{% endif %}>Masvingo</option>
+        <option value="Matabeleland North" {% if request.args.get('province')=='Matabeleland North' %}selected{% endif %}>Matabeleland North</option>
+        <option value="Matabeleland South" {% if request.args.get('province')=='Matabeleland South' %}selected{% endif %}>Matabeleland South</option>
+        <option value="Midlands" {% if request.args.get('province')=='Midlands' %}selected{% endif %}>Midlands</option>
+      {% else %}
+        <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
+      {% endif %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label for="district" class="form-label">District</label>
+    <select id="district" name="district" class="form-select" data-selected="{{ request.args.get('district','') }}" {% if current_user and current_user.district %}disabled{% endif %}>
+      {% if current_user and current_user.district %}
+        <option value="{{ current_user.district }}" selected>{{ current_user.district }}</option>
+      {% else %}
+        <option value="">Any</option>
+      {% endif %}
+    </select>
+  </div>
+  <div class="col-md-3 form-check mt-4">
+    <input type="checkbox" class="form-check-input" id="uninspected" name="uninspected" {% if request.args.get('uninspected')=='on' %}checked{% endif %}>
+    <label class="form-check-label" for="uninspected">Uninspected only</label>
+  </div>
+  <div class="col-md-9 d-flex align-items-end gap-2 mt-2">
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a class="btn btn-outline-primary" href="{{ url_for('export', fmt='csv', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export CSV</a>
+    <a class="btn btn-outline-success" href="{{ url_for('export', fmt='excel', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Excel</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('export', fmt='word', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Word</a>
+    <a class="btn btn-outline-danger" href="{{ url_for('export', fmt='pdf', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export PDF</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Serial</th>
+        <th>Purchase Date</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+        <th>Province</th>
+        <th>District</th>
+        <th>OS</th>
+        <th>Antivirus</th>
+        <th>Office</th>
+        <th>EOL Date</th>
+        <th>EOL Status</th>
+        <th>Inspected</th>
+        <th>Inspection Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assets %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ a.name }}</td>
+        <td>{{ a.type }}</td>
+        <td>{{ a.serial_number }}</td>
+        <td>{{ a.purchase_date or '-' }}</td>
+        <td>{{ a.status }}</td>
+        <td>{{ a.assigned_to or '-' }}</td>
+        <td>{{ a.province or '-' }}</td>
+        <td>{{ a.district or '-' }}</td>
+        <td>{{ a.os_name or '-' }}</td>
+        <td>{{ a.antivirus_name or '-' }}</td>
+        <td>{{ a.office_name or '-' }}</td>
+        <td>{{ a.eol_date or '-' }}</td>
+        <td>{{ a.eol_status or '-' }}</td>
+        <td>{{ 'Yes' if a.inspected_by_ict else 'No' }}</td>
+        <td>{{ a.inspection_date or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="16" class="text-center">No data</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+  const districtsByProvince = {
+      "Head Office": [],
+      "Bulawayo": ["Bulawayo District"],
+      "Harare": ["Harare District"],
+      "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+      "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+      "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+      "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+      "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+      "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+      "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+      "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+  };
+  function updateDistricts() {
+      const provinceSelect = document.getElementById("province");
+      const districtSelect = document.getElementById("district");
+      const selectedProvince = provinceSelect.value;
+      const currentDistrict = districtSelect.dataset.selected;
+      const hasLockedDistrict = {{ 'true' if current_user and current_user.district else 'false' }};
+      if (!hasLockedDistrict) {
+          districtSelect.innerHTML = '<option value="">Any</option>';
+      }
+      if (selectedProvince === 'Head Office') {
+          districtSelect.disabled = true;
+          return;
+      }
+      districtSelect.disabled = false;
+      if (selectedProvince && districtsByProvince[selectedProvince]) {
+          districtsByProvince[selectedProvince].forEach(district => {
+              const option = document.createElement("option");
+              option.value = district;
+              option.textContent = district;
+              if (district === currentDistrict) option.selected = true;
+              districtSelect.appendChild(option);
+          });
+      }
+  }
+  document.addEventListener('DOMContentLoaded', updateDistricts);
+</script>
+{% endblock %}

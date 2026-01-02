@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Edit Asset</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label for="name" class="form-label">Asset Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ asset.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="type" class="form-label">Type</label>
+        <select class="form-select" id="type" name="type" required onchange="toggleHealthSection()">
+            <option value="Laptop" {% if asset.type == 'Laptop' %}selected{% endif %}>Laptop</option>
+            <option value="Desktop" {% if asset.type == 'Desktop' %}selected{% endif %}>Desktop</option>
+            <option value="All-in-One" {% if asset.type == 'All-in-One' %}selected{% endif %}>All-in-One</option>
+            <option value="Tablet" {% if asset.type == 'Tablet' %}selected{% endif %}>Tablet</option>
+            <option value="Cellphone" {% if asset.type == 'Cellphone' %}selected{% endif %}>Cellphone</option>
+            <option value="Monitor" {% if asset.type == 'Monitor' %}selected{% endif %}>Monitor</option>
+            <option value="Printer" {% if asset.type == 'Printer' %}selected{% endif %}>Printer</option>
+            <option value="Projector" {% if asset.type == 'Projector' %}selected{% endif %}>Projector</option>
+            <option value="Scanner" {% if asset.type == 'Scanner' %}selected{% endif %}>Scanner</option>
+            <option value="Accessory" {% if asset.type == 'Accessory' %}selected{% endif %}>Accessory</option>
+            <option value="Other" {% if asset.type == 'Other' %}selected{% endif %}>Other</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="serial_number" class="form-label">Serial Number</label>
+        <input type="text" class="form-control" id="serial_number" name="serial_number" value="{{ asset.serial_number }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="purchase_date" class="form-label">Purchase Date</label>
+        <input type="date" class="form-control" id="purchase_date" name="purchase_date" value="{{ asset.purchase_date }}">
+    </div>
+    <div class="mb-3">
+        <label for="assigned_to" class="form-label">Assigned To</label>
+        <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
+    </div>
+    <div class="mb-3">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status" required>
+            <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>
+            <option value="In Use" {% if asset.status == 'In Use' %}selected{% endif %}>In Use</option>
+            <option value="Broken" {% if asset.status == 'Broken' %}selected{% endif %}>Broken</option>
+            <option value="Lost" {% if asset.status == 'Lost' %}selected{% endif %}>Lost</option>
+        </select>
+    </div>
+
+    <div id="health-section">
+        <hr>
+        <h4>Health & Software Details</h4>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+            <label for="os_name" class="form-label">Operating System (OS)</label>
+            <select class="form-select" id="os_name" name="os_name">
+                <option value="">Select OS</option>
+                <option value="Windows 7" {% if asset.os_name == 'Windows 7' %}selected{% endif %}>Windows 7</option>
+                <option value="Windows 8" {% if asset.os_name == 'Windows 8' %}selected{% endif %}>Windows 8</option>
+                <option value="Windows 8.1" {% if asset.os_name == 'Windows 8.1' %}selected{% endif %}>Windows 8.1</option>
+                <option value="Windows 10" {% if asset.os_name == 'Windows 10' %}selected{% endif %}>Windows 10</option>
+                <option value="Windows 11" {% if asset.os_name == 'Windows 11' %}selected{% endif %}>Windows 11</option>
+                <option value="Linux" {% if asset.os_name == 'Linux' %}selected{% endif %}>Linux</option>
+                <option value="macOS" {% if asset.os_name == 'macOS' %}selected{% endif %}>macOS</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="antivirus_name" class="form-label">Antivirus Name</label>
+            <select class="form-select" id="antivirus_name" name="antivirus_name">
+                <option value="">Select Antivirus</option>
+                <option value="ESET NOD32" {% if asset.antivirus_name == 'ESET NOD32' %}selected{% endif %}>ESET NOD32</option>
+                <option value="Kaspersky" {% if asset.antivirus_name == 'Kaspersky' %}selected{% endif %}>Kaspersky</option>
+                <option value="Avast" {% if asset.antivirus_name == 'Avast' %}selected{% endif %}>Avast</option>
+                <option value="AVG" {% if asset.antivirus_name == 'AVG' %}selected{% endif %}>AVG</option>
+                <option value="McAfee" {% if asset.antivirus_name == 'McAfee' %}selected{% endif %}>McAfee</option>
+                <option value="Norton" {% if asset.antivirus_name == 'Norton' %}selected{% endif %}>Norton</option>
+                <option value="Windows Defender" {% if asset.antivirus_name == 'Windows Defender' %}selected{% endif %}>Windows Defender</option>
+                <option value="Bitdefender" {% if asset.antivirus_name == 'Bitdefender' %}selected{% endif %}>Bitdefender</option>
+                <option value="Sophos" {% if asset.antivirus_name == 'Sophos' %}selected{% endif %}>Sophos</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
+            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" value="{{ asset.antivirus_license_date }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="office_name" class="form-label">Office Application</label>
+            <select class="form-select" id="office_name" name="office_name">
+                <option value="">Select Office Version</option>
+                <option value="Office 2007" {% if asset.office_name == 'Office 2007' %}selected{% endif %}>Office 2007</option>
+                <option value="Office 2010" {% if asset.office_name == 'Office 2010' %}selected{% endif %}>Office 2010</option>
+                <option value="Office 2013" {% if asset.office_name == 'Office 2013' %}selected{% endif %}>Office 2013</option>
+                <option value="Office 2016" {% if asset.office_name == 'Office 2016' %}selected{% endif %}>Office 2016</option>
+                <option value="Office 2019" {% if asset.office_name == 'Office 2019' %}selected{% endif %}>Office 2019</option>
+                <option value="Office 2021" {% if asset.office_name == 'Office 2021' %}selected{% endif %}>Office 2021</option>
+                <option value="Microsoft 365" {% if asset.office_name == 'Microsoft 365' %}selected{% endif %}>Microsoft 365</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="office_license_date" class="form-label">Office License Date</label>
+            <input type="date" class="form-control" id="office_license_date" name="office_license_date" value="{{ asset.office_license_date }}">
+        </div>
+    </div>
+    </div>
+
+    <hr>
+    <h4>Location Details</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="province" class="form-label">Province</label>
+            <select class="form-select" id="province" name="province" onchange="updateDistricts()" {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
+                <option value="">Select Province</option>
+                {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
+                <option value="Head Office" {% if asset.province == 'Head Office' %}selected{% endif %}>Head Office</option>
+                <option value="Bulawayo" {% if asset.province == 'Bulawayo' %}selected{% endif %}>Bulawayo</option>
+                <option value="Harare" {% if asset.province == 'Harare' %}selected{% endif %}>Harare</option>
+                <option value="Manicaland" {% if asset.province == 'Manicaland' %}selected{% endif %}>Manicaland</option>
+                <option value="Mashonaland Central" {% if asset.province == 'Mashonaland Central' %}selected{% endif %}>Mashonaland Central</option>
+                <option value="Mashonaland East" {% if asset.province == 'Mashonaland East' %}selected{% endif %}>Mashonaland East</option>
+                <option value="Mashonaland West" {% if asset.province == 'Mashonaland West' %}selected{% endif %}>Mashonaland West</option>
+                <option value="Masvingo" {% if asset.province == 'Masvingo' %}selected{% endif %}>Masvingo</option>
+                <option value="Matabeleland North" {% if asset.province == 'Matabeleland North' %}selected{% endif %}>Matabeleland North</option>
+                <option value="Matabeleland South" {% if asset.province == 'Matabeleland South' %}selected{% endif %}>Matabeleland South</option>
+                <option value="Midlands" {% if asset.province == 'Midlands' %}selected{% endif %}>Midlands</option>
+                {% else %}
+                <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="district" class="form-label">District</label>
+            <select class="form-select" id="district" name="district" data-selected="{{ asset.district }}" {% if current_role == 'AdminDistrict' and current_user and current_user.district %}disabled{% endif %}>
+                {% if asset.district %}
+                <option value="{{ asset.district }}" selected>{{ asset.district }}</option>
+                {% else %}
+                <option value="">Select District</option>
+                {% endif %}
+            </select>
+        </div>
+    </div>
+
+    <hr>
+    <h4>Inspection</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if asset.inspected_by_ict %}checked{% endif %} {% if current_role != 'IT' %}disabled{% endif %}>
+            <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="inspection_date" class="form-label">Inspection Date</label>
+            <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
+        </div>
+    </div>
+
+    <script>
+        function toggleHealthSection() {
+            const type = document.getElementById("type").value;
+            const healthSection = document.getElementById("health-section");
+            const computerTypes = ["Laptop", "Desktop", "All-in-One"];
+            
+            if (computerTypes.includes(type)) {
+                healthSection.style.display = "block";
+            } else {
+                healthSection.style.display = "none";
+            }
+        }
+
+        const districtsByProvince = {
+            "Head Office": [],
+            "Bulawayo": ["Bulawayo District"],
+            "Harare": ["Harare District"],
+            "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+            "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+            "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+            "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+            "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+            "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+            "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+            "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+        };
+
+        function updateDistricts() {
+            const provinceSelect = document.getElementById("province");
+            const districtSelect = document.getElementById("district");
+            let selectedProvince = provinceSelect.value;
+            if (!selectedProvince) {
+                selectedProvince = "{{ current_user.province if current_user else '' }}";
+                provinceSelect.value = selectedProvince;
+            }
+            const currentDistrict = districtSelect.dataset.selected;
+            
+            // Clear existing options
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            
+            if (selectedProvince === 'Head Office') {
+                districtSelect.disabled = true;
+                districtSelect.required = false;
+                return;
+            }
+            districtSelect.disabled = false;
+            districtSelect.required = true;
+            if (selectedProvince && districtsByProvince[selectedProvince]) {
+                districtsByProvince[selectedProvince].forEach(district => {
+                    const option = document.createElement("option");
+                    option.value = district;
+                    option.textContent = district;
+                    if (district === currentDistrict) {
+                        option.selected = true;
+                    }
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Initialize districts and health section on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const provinceSelect = document.getElementById("province");
+            const defaultProvince = "{{ asset.province or (current_user.province if current_user else '') }}";
+            if (defaultProvince) {
+                provinceSelect.value = defaultProvince;
+            }
+            updateDistricts();
+            toggleHealthSection();
+        });
+    </script>
+
+    <button type="submit" class="btn btn-primary">Update Asset</button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

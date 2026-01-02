@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Asset Details</h2>
+  <div>
+    <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-warning">Edit</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+  </div>
+  </div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">General</div>
+      <div class="card-body">
+        <p><strong>ID:</strong> {{ asset.id }}</p>
+        <p><strong>Name:</strong> {{ asset.name }}</p>
+        <p><strong>Type:</strong> {{ asset.type }}</p>
+        <p><strong>Serial Number:</strong> {{ asset.serial_number }}</p>
+        <p><strong>Purchase Date:</strong> {{ asset.purchase_date or '-' }}</p>
+        <p><strong>Status:</strong> {{ asset.status }}</p>
+        <p><strong>Assigned To:</strong> {{ asset.assigned_to or '-' }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Location</div>
+      <div class="card-body">
+        <p><strong>Province:</strong> {{ asset.province or '-' }}</p>
+        <p><strong>District:</strong> {{ asset.district or '-' }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Inspection</div>
+      <div class="card-body">
+        {% if asset.inspected_by_ict %}
+          <span class="badge bg-success mb-2">Inspected</span>
+        {% else %}
+          <span class="badge bg-secondary mb-2">Not inspected</span>
+        {% endif %}
+        <p><strong>Inspection Date:</strong> {{ asset.inspection_date or '-' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">Health & Software</div>
+      <div class="card-body">
+        <p><strong>OS:</strong> {{ asset.os_name or '-' }}</p>
+        <p><strong>Antivirus:</strong> 
+          {% if asset.antivirus_name %}
+            {{ asset.antivirus_name }}
+            {% if asset.is_antivirus_expired %}
+              <span class="badge bg-danger ms-2">Expired</span>
+            {% endif %}
+          {% else %}-{% endif %}
+        </p>
+        <p><strong>Antivirus License Date:</strong> {{ asset.antivirus_license_date or '-' }}</p>
+        <p><strong>Office:</strong> 
+          {% if asset.office_name %}
+            {{ asset.office_name }}
+            {% if asset.is_office_expired %}
+              <span class="badge bg-danger ms-2">Expired</span>
+            {% endif %}
+          {% else %}-{% endif %}
+        </p>
+        <p><strong>Office License Date:</strong> {{ asset.office_license_date or '-' }}</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Lifecycle</div>
+      <div class="card-body">
+        <p><strong>EOL Date:</strong> {{ asset.eol_date or '-' }}</p>
+        {% if asset.eol_date %}
+          {% if asset.is_eol_passed %}
+            <span class="badge bg-danger">Past EOL</span>
+          {% elif asset.is_eol_approaching %}
+            <span class="badge bg-warning text-dark">Approaching EOL</span>
+          {% else %}
+            <span class="badge bg-success">Healthy</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

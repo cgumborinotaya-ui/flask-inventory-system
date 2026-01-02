@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Add New Asset</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label for="name" class="form-label">Asset Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="type" class="form-label">Type</label>
+        <select class="form-select" id="type" name="type" required onchange="toggleHealthSection()">
+            <option value="">Select Type</option>
+            <option value="Laptop">Laptop</option>
+            <option value="Desktop">Desktop</option>
+            <option value="All-in-One">All-in-One</option>
+            <option value="Tablet">Tablet</option>
+            <option value="Cellphone">Cellphone</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Printer">Printer</option>
+            <option value="Projector">Projector</option>
+            <option value="Scanner">Scanner</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="serial_number" class="form-label">Serial Number</label>
+        <input type="text" class="form-control" id="serial_number" name="serial_number" required>
+    </div>
+    <div class="mb-3">
+        <label for="purchase_date" class="form-label">Purchase Date</label>
+        <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
+    </div>
+    <div class="mb-3">
+        <label for="assigned_to" class="form-label">Assigned To</label>
+        <input type="text" class="form-control" id="assigned_to" name="assigned_to">
+    </div>
+    <div class="mb-3">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status" required>
+            <option value="In Stock">In Stock</option>
+            <option value="In Use">In Use</option>
+            <option value="Broken">Broken</option>
+            <option value="Lost">Lost</option>
+        </select>
+    </div>
+
+    <div id="health-section">
+        <hr>
+        <h4>Health & Software Details</h4>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+            <label for="os_name" class="form-label">Operating System (OS)</label>
+            <select class="form-select" id="os_name" name="os_name">
+                <option value="">Select OS</option>
+                <option value="Windows 7">Windows 7</option>
+                <option value="Windows 8">Windows 8</option>
+                <option value="Windows 8.1">Windows 8.1</option>
+                <option value="Windows 10">Windows 10</option>
+                <option value="Windows 11">Windows 11</option>
+                <option value="Linux">Linux</option>
+                <option value="macOS">macOS</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="antivirus_name" class="form-label">Antivirus Name</label>
+            <select class="form-select" id="antivirus_name" name="antivirus_name">
+                <option value="">Select Antivirus</option>
+                <option value="ESET NOD32">ESET NOD32</option>
+                <option value="Kaspersky">Kaspersky</option>
+                <option value="Avast">Avast</option>
+                <option value="AVG">AVG</option>
+                <option value="McAfee">McAfee</option>
+                <option value="Norton">Norton</option>
+                <option value="Windows Defender">Windows Defender</option>
+                <option value="Bitdefender">Bitdefender</option>
+                <option value="Sophos">Sophos</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
+            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="office_name" class="form-label">Office Application</label>
+            <select class="form-select" id="office_name" name="office_name">
+                <option value="">Select Office Version</option>
+                <option value="Office 2007">Office 2007</option>
+                <option value="Office 2010">Office 2010</option>
+                <option value="Office 2013">Office 2013</option>
+                <option value="Office 2016">Office 2016</option>
+                <option value="Office 2019">Office 2019</option>
+                <option value="Office 2021">Office 2021</option>
+                <option value="Microsoft 365">Microsoft 365</option>
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="office_license_date" class="form-label">Office License Date</label>
+            <input type="date" class="form-control" id="office_license_date" name="office_license_date">
+        </div>
+    </div>
+    </div>
+
+    <hr>
+    <h4>Location Details</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="province" class="form-label">Province</label>
+            <select class="form-select" id="province" name="province" onchange="updateDistricts()" required {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
+                <option value="">Select Province</option>
+                {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
+                <option value="Head Office">Head Office</option>
+                <option value="Bulawayo">Bulawayo</option>
+                <option value="Harare">Harare</option>
+                <option value="Manicaland">Manicaland</option>
+                <option value="Mashonaland Central">Mashonaland Central</option>
+                <option value="Mashonaland East">Mashonaland East</option>
+                <option value="Mashonaland West">Mashonaland West</option>
+                <option value="Masvingo">Masvingo</option>
+                <option value="Matabeleland North">Matabeleland North</option>
+                <option value="Matabeleland South">Matabeleland South</option>
+                <option value="Midlands">Midlands</option>
+                {% else %}
+                <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="district" class="form-label">District</label>
+            <select class="form-select" id="district" name="district" {% if current_user and current_user.district %}disabled{% endif %}>
+                <option value="">Select District</option>
+                {% if current_user and current_user.district %}
+                <option value="{{ current_user.district }}" selected>{{ current_user.district }}</option>
+                {% endif %}
+            </select>
+        </div>
+    </div>
+
+    <hr>
+    <h4>Inspection</h4>
+    <div class="row">
+        <div class="col-md-6 mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if current_role != 'IT' %}disabled{% endif %}>
+            <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="inspection_date" class="form-label">Inspection Date</label>
+            <input type="date" class="form-control" id="inspection_date" name="inspection_date" {% if current_role != 'IT' %}disabled{% endif %}>
+        </div>
+    </div>
+
+    <script>
+        function toggleHealthSection() {
+            const type = document.getElementById("type").value;
+            const healthSection = document.getElementById("health-section");
+            const computerTypes = ["Laptop", "Desktop", "All-in-One"];
+            
+            if (computerTypes.includes(type)) {
+                healthSection.style.display = "block";
+            } else {
+                healthSection.style.display = "none";
+            }
+        }
+
+        const districtsByProvince = {
+            "Head Office": [],
+            "Bulawayo": ["Bulawayo District"],
+            "Harare": ["Harare District"],
+            "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+            "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+            "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+            "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+            "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+            "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+            "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+            "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+        };
+
+        function updateDistricts() {
+            const provinceSelect = document.getElementById("province");
+            const districtSelect = document.getElementById("district");
+            let selectedProvince = provinceSelect.value;
+            if (!selectedProvince) {
+                selectedProvince = "{{ current_user.province if current_user else '' }}";
+                provinceSelect.value = selectedProvince;
+            }
+            
+            // Clear existing options
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            
+            if (selectedProvince === 'Head Office') {
+                districtSelect.disabled = true;
+                districtSelect.required = false;
+                return;
+            }
+            districtSelect.disabled = false;
+            districtSelect.required = true;
+            if (selectedProvince && districtsByProvince[selectedProvince]) {
+                districtsByProvince[selectedProvince].forEach(district => {
+                    const option = document.createElement("option");
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Initialize districts and health section on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const provinceSelect = document.getElementById("province");
+            const defaultProvince = "{{ current_user.province if current_user else '' }}";
+            if (defaultProvince) {
+                provinceSelect.value = defaultProvince;
+            }
+            updateDistricts();
+            toggleHealthSection();
+        });
+    </script>
+
+    <button type="submit" class="btn btn-primary">Save Asset</button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
