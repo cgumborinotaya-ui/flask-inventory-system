@@ -5,6 +5,7 @@ import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
@@ -35,6 +36,7 @@ class Asset(db.Model):
     serial_number = db.Column(db.String(100), unique=True, nullable=False)
     purchase_date = db.Column(db.Date, nullable=True)
     assigned_to = db.Column(db.String(100), nullable=True)
+    supplier = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(50), default='In Stock')
     
     # New fields
@@ -254,6 +256,7 @@ def add_asset():
         serial_number = (request.form['serial_number'] or '').strip()
         purchase_date_str = (request.form['purchase_date'] or '').strip()
         assigned_to = (request.form['assigned_to'] or '').strip()
+        supplier = (request.form.get('supplier') or '').strip()
         status = (request.form['status'] or '').strip()
         
         antivirus_name = request.form.get('antivirus_name')
@@ -308,6 +311,7 @@ def add_asset():
                 inspection_date = None
             new_asset = Asset(name=name, type=type, serial_number=serial_number, 
                               purchase_date=purchase_date, assigned_to=assigned_to, status=status,
+                              supplier=(supplier or None),
                               antivirus_name=antivirus_name, antivirus_license_date=antivirus_license_date,
                               office_name=office_name, office_license_date=office_license_date,
                               os_name=os_name, province=province, district=district,
@@ -341,6 +345,7 @@ def edit_asset(id):
         asset.serial_number = request.form['serial_number']
         purchase_date_str = request.form['purchase_date']
         asset.assigned_to = request.form['assigned_to']
+        asset.supplier = (request.form.get('supplier') or '').strip() or None
         asset.status = request.form['status']
         
         asset.antivirus_name = request.form.get('antivirus_name')
@@ -441,12 +446,15 @@ def get_report_assets(report_type):
 
     # Optional filters via query params
     name = request.args.get('assigned_to') or ''
+    supplier = request.args.get('supplier') or ''
     province = request.args.get('province') or ''
     district = request.args.get('district') or ''
     uninspected_only = request.args.get('uninspected') == 'on'
 
     if name.strip():
         q = q.filter(Asset.assigned_to == name.strip())
+    if supplier.strip():
+        q = q.filter(Asset.supplier == supplier.strip())
     if province.strip():
         q = q.filter(Asset.province == province.strip())
         if province.strip() != 'Head Office' and district.strip():
@@ -474,6 +482,7 @@ def asset_rows(assets):
             'Purchase Date': a.purchase_date.isoformat() if a.purchase_date else '',
             'Status': a.status,
             'Assigned To': a.assigned_to or '',
+            'Supplier': a.supplier or '',
             'Province': a.province or '',
             'District': a.district or '',
             'OS': a.os_name or '',
@@ -493,8 +502,18 @@ def asset_rows(assets):
 def reports():
     report_type = request.args.get('type', 'all')
     assets = get_report_assets(report_type)
+    suppliers = [
+        r[0] for r in filter_by_user_location(Asset.query)
+        .with_entities(Asset.supplier)
+        .filter(Asset.supplier.isnot(None))
+        .filter(Asset.supplier != '')
+        .distinct()
+        .order_by(Asset.supplier)
+        .all()
+        if r[0]
+    ]
     log_action('view_reports', details=report_type)
-    return render_template('reports.html', assets=assets, report_type=report_type)
+    return render_template('reports.html', assets=assets, report_type=report_type, suppliers=suppliers)
 
 @app.route('/export/<fmt>')
 @login_required
@@ -507,7 +526,7 @@ def export(fmt):
     if fmt == 'csv' or fmt == 'excel':
         si = io.StringIO()
         writer = csv.DictWriter(si, fieldnames=list(rows[0].keys()) if rows else [
-            'ID','Name','Type','Serial','Purchase Date','Status','Assigned To','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date'
+            'ID','Name','Type','Serial','Purchase Date','Status','Assigned To','Supplier','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date'
         ])
         writer.writeheader()
         for r in rows:
@@ -547,7 +566,7 @@ def export(fmt):
             y -= 1*cm
             c.setFont("Helvetica", 9)
             for r in rows or []:
-                line = f"{r['ID']} | {r['Name']} | {r['Type']} | {r['Serial']} | {r['Status']} | {r['Province']} | {r['District']} | EOL: {r['EOL Date']} {r['EOL Status']} | Inspected: {r['Inspected']}"
+                line = f"{r['ID']} | {r['Name']} | {r['Type']} | {r['Serial']} | {r['Status']} | {r.get('Supplier','')} | {r['Province']} | {r['District']} | EOL: {r['EOL Date']} {r['EOL Status']} | Inspected: {r['Inspected']}"
                 c.drawString(2*cm, y, line[:200])
                 y -= 0.6*cm
                 if y < 2*cm:
@@ -654,6 +673,16 @@ class PasswordResetToken(db.Model):
     token = db.Column(db.String(120), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
+
+def ensure_schema():
+    with app.app_context():
+        db.create_all()
+        cols = [r[1] for r in db.session.execute(text("PRAGMA table_info(asset)")).fetchall()]
+        if 'supplier' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN supplier VARCHAR(120)"))
+            db.session.commit()
+
+ensure_schema()
 
 def generate_reset_token(user_id):
     import secrets
@@ -866,4 +895,3 @@ if __name__ == '__main__':
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-

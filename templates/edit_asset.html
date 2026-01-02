@@ -36,6 +36,10 @@
         <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
     </div>
     <div class="mb-3">
+        <label for="supplier" class="form-label">Supplier</label>
+        <input type="text" class="form-control" id="supplier" name="supplier" value="{{ asset.supplier or '' }}">
+    </div>
+    <div class="mb-3">
         <label for="status" class="form-label">Status</label>
         <select class="form-select" id="status" name="status" required>
             <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>

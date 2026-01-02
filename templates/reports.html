@@ -23,6 +23,15 @@
     <input type="text" id="assigned_to" name="assigned_to" class="form-control" value="{{ request.args.get('assigned_to','') }}">
   </div>
   <div class="col-md-4">
+    <label for="supplier" class="form-label">Supplier</label>
+    <select id="supplier" name="supplier" class="form-select">
+      <option value="">Any</option>
+      {% for s in suppliers or [] %}
+        <option value="{{ s }}" {% if request.args.get('supplier')==s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
     <label for="province" class="form-label">Province</label>
     <select id="province" name="province" class="form-select" onchange="updateDistricts()" {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
       {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
@@ -59,10 +68,10 @@
   </div>
   <div class="col-md-9 d-flex align-items-end gap-2 mt-2">
     <button type="submit" class="btn btn-primary">Filter</button>
-    <a class="btn btn-outline-primary" href="{{ url_for('export', fmt='csv', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export CSV</a>
-    <a class="btn btn-outline-success" href="{{ url_for('export', fmt='excel', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Excel</a>
-    <a class="btn btn-outline-secondary" href="{{ url_for('export', fmt='word', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Word</a>
-    <a class="btn btn-outline-danger" href="{{ url_for('export', fmt='pdf', type=report_type, assigned_to=request.args.get('assigned_to',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export PDF</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('export', fmt='csv', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export CSV</a>
+    <a class="btn btn-outline-success" href="{{ url_for('export', fmt='excel', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Excel</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('export', fmt='word', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Word</a>
+    <a class="btn btn-outline-danger" href="{{ url_for('export', fmt='pdf', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export PDF</a>
   </div>
 </form>
 
@@ -77,6 +86,7 @@
         <th>Purchase Date</th>
         <th>Status</th>
         <th>Assigned To</th>
+        <th>Supplier</th>
         <th>Province</th>
         <th>District</th>
         <th>OS</th>
@@ -98,6 +108,7 @@
         <td>{{ a.purchase_date or '-' }}</td>
         <td>{{ a.status }}</td>
         <td>{{ a.assigned_to or '-' }}</td>
+        <td>{{ a.supplier or '-' }}</td>
         <td>{{ a.province or '-' }}</td>
         <td>{{ a.district or '-' }}</td>
         <td>{{ a.os_name or '-' }}</td>
@@ -110,7 +121,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="16" class="text-center">No data</td>
+        <td colspan="17" class="text-center">No data</td>
       </tr>
       {% endfor %}
     </tbody>

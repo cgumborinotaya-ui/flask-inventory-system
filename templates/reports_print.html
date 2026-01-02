@@ -18,6 +18,7 @@
         <th>Purchase Date</th>
         <th>Status</th>
         <th>Assigned To</th>
+        <th>Supplier</th>
         <th>Province</th>
         <th>District</th>
         <th>OS</th>
@@ -39,6 +40,7 @@
         <td>{{ a.purchase_date or '-' }}</td>
         <td>{{ a.status }}</td>
         <td>{{ a.assigned_to or '-' }}</td>
+        <td>{{ a.supplier or '-' }}</td>
         <td>{{ a.province or '-' }}</td>
         <td>{{ a.district or '-' }}</td>
         <td>{{ a.os_name or '-' }}</td>
@@ -51,11 +53,10 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="16" class="text-center">No data</td>
+        <td colspan="17" class="text-center">No data</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% endblock %}
-
