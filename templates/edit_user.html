@@ -14,7 +14,7 @@
   <div class="mb-3">
     <label class="form-label">Role</label>
     <select name="role" id="role" class="form-select" required onchange="adjustLocationRequirements()">
-      <option value="IT" {% if user.role=='IT' %}selected{% endif %}>IT</option>
+      <option value="IT" {% if user.role=='IT' %}selected{% endif %}>AdminIT</option>
       <option value="Admin" {% if user.role=='Admin' %}selected{% endif %}>Admin</option>
       <option value="AdminProvince" {% if user.role=='AdminProvince' %}selected{% endif %}>Admin (Province)</option>
       <option value="AdminDistrict" {% if user.role=='AdminDistrict' %}selected{% endif %}>Admin (District)</option>

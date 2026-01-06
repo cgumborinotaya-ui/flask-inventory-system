@@ -23,7 +23,7 @@
           <div class="mb-3">
             <label class="form-label">Role</label>
             <select name="role" id="role" class="form-select" required onchange="adjustLocationRequirements()">
-              <option value="IT">IT</option>
+              <option value="IT">AdminIT</option>
               <option value="Admin">Admin</option>
               <option value="AdminProvince">Admin (Province)</option>
               <option value="AdminDistrict">Admin (District)</option>
@@ -84,7 +84,7 @@
             <tr>
               <td>{{ u.id }}</td>
               <td>{{ u.username }}</td>
-              <td>{{ u.role }}</td>
+              <td>{{ 'AdminIT' if u.role == 'IT' else u.role }}</td>
               <td>{{ u.province or '-' }}</td>
               <td>{{ u.district or '-' }}</td>
               <td>

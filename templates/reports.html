@@ -16,6 +16,8 @@
       <option value="past_eol" {% if report_type=='past_eol' %}selected{% endif %}>Past EOL</option>
       <option value="inspections" {% if report_type=='inspections' %}selected{% endif %}>Inspected Assets</option>
       <option value="uninspected" {% if report_type=='uninspected' %}selected{% endif %}>Uninspected Assets</option>
+      <option value="movement" {% if report_type=='movement' %}selected{% endif %}>Asset Movement History</option>
+      <option value="archived_auctioned" {% if report_type=='archived_auctioned' %}selected{% endif %}>Archived & Auctioned Assets</option>
     </select>
   </div>
   <div class="col-md-4">
@@ -53,6 +55,18 @@
     </select>
   </div>
   <div class="col-md-4">
+    <label for="status" class="form-label">Status</label>
+    <select id="status" name="status" class="form-select">
+      <option value="">Any</option>
+      <option value="In Stock" {% if request.args.get('status')=='In Stock' %}selected{% endif %}>In Stock</option>
+      <option value="In Use" {% if request.args.get('status')=='In Use' %}selected{% endif %}>In Use</option>
+      <option value="Broken" {% if request.args.get('status')=='Broken' %}selected{% endif %}>Broken</option>
+      <option value="Lost / Stolen" {% if request.args.get('status')=='Lost / Stolen' %}selected{% endif %}>Lost / Stolen</option>
+      <option value="Archived" {% if request.args.get('status')=='Archived' %}selected{% endif %}>Archived</option>
+      <option value="Auctioned" {% if request.args.get('status')=='Auctioned' %}selected{% endif %}>Auctioned</option>
+    </select>
+  </div>
+  <div class="col-md-4">
     <label for="district" class="form-label">District</label>
     <select id="district" name="district" class="form-select" data-selected="{{ request.args.get('district','') }}" {% if current_user and current_user.district %}disabled{% endif %}>
       {% if current_user and current_user.district %}
@@ -62,19 +76,71 @@
       {% endif %}
     </select>
   </div>
+  {% if report_type == 'movement' %}
+  <div class="col-md-4">
+    <label for="asset_id" class="form-label">Asset ID</label>
+    <input type="number" id="asset_id" name="asset_id" class="form-control" value="{{ request.args.get('asset_id','') }}">
+  </div>
+  <div class="col-md-4">
+    <label for="serial" class="form-label">Serial</label>
+    <input type="text" id="serial" name="serial" class="form-control" value="{{ request.args.get('serial','') }}">
+  </div>
+  <div class="col-md-4">
+    <label for="movement_field" class="form-label">Movement Field</label>
+    <select id="movement_field" name="movement_field" class="form-select">
+      <option value="">Any</option>
+      <option value="province" {% if request.args.get('movement_field')=='province' %}selected{% endif %}>Province</option>
+      <option value="district" {% if request.args.get('movement_field')=='district' %}selected{% endif %}>District</option>
+      <option value="assigned_to" {% if request.args.get('movement_field')=='assigned_to' %}selected{% endif %}>Assigned To</option>
+      <option value="status" {% if request.args.get('movement_field')=='status' %}selected{% endif %}>Status</option>
+    </select>
+  </div>
+  {% endif %}
   <div class="col-md-3 form-check mt-4">
     <input type="checkbox" class="form-check-input" id="uninspected" name="uninspected" {% if request.args.get('uninspected')=='on' %}checked{% endif %}>
     <label class="form-check-label" for="uninspected">Uninspected only</label>
   </div>
-  <div class="col-md-9 d-flex align-items-end gap-2 mt-2">
+  <div class="col-md-3">
+    <label for="start_date" class="form-label">Start Date (Purchase / Movement)</label>
+    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request.args.get('start_date','') }}">
+  </div>
+  <div class="col-md-3">
+    <label for="end_date" class="form-label">End Date (Purchase / Movement)</label>
+    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request.args.get('end_date','') }}">
+  </div>
+  <div class="col-md-6 d-flex align-items-end gap-2 mt-2">
     <button type="submit" class="btn btn-primary">Filter</button>
+    {% if report_type != 'movement' %}
     <a class="btn btn-outline-primary" href="{{ url_for('export', fmt='csv', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export CSV</a>
     <a class="btn btn-outline-success" href="{{ url_for('export', fmt='excel', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Excel</a>
     <a class="btn btn-outline-secondary" href="{{ url_for('export', fmt='word', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export Word</a>
     <a class="btn btn-outline-danger" href="{{ url_for('export', fmt='pdf', type=report_type, assigned_to=request.args.get('assigned_to',''), supplier=request.args.get('supplier',''), province=request.args.get('province',''), district=request.args.get('district',''), uninspected=request.args.get('uninspected','')) }}">Export PDF</a>
+    {% else %}
+    <a class="btn btn-outline-primary" href="{{ url_for('export', fmt='csv', type='movement', asset_id=request.args.get('asset_id',''), serial=request.args.get('serial',''), movement_field=request.args.get('movement_field',''), province=request.args.get('province',''), district=request.args.get('district',''), start_date=request.args.get('start_date',''), end_date=request.args.get('end_date','')) }}">Export CSV</a>
+    <a class="btn btn-outline-success" href="{{ url_for('export', fmt='excel', type='movement', asset_id=request.args.get('asset_id',''), serial=request.args.get('serial',''), movement_field=request.args.get('movement_field',''), province=request.args.get('province',''), district=request.args.get('district',''), start_date=request.args.get('start_date',''), end_date=request.args.get('end_date','')) }}">Export Excel</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('export', fmt='word', type='movement', asset_id=request.args.get('asset_id',''), serial=request.args.get('serial',''), movement_field=request.args.get('movement_field',''), province=request.args.get('province',''), district=request.args.get('district',''), start_date=request.args.get('start_date',''), end_date=request.args.get('end_date','')) }}">Export Word</a>
+    <a class="btn btn-outline-danger" href="{{ url_for('export', fmt='pdf', type='movement', asset_id=request.args.get('asset_id',''), serial=request.args.get('serial',''), movement_field=request.args.get('movement_field',''), province=request.args.get('province',''), district=request.args.get('district',''), start_date=request.args.get('start_date',''), end_date=request.args.get('end_date','')) }}">Export PDF</a>
+    {% endif %}
   </div>
 </form>
 
+{% if status_counts %}
+<div class="row mb-3">
+  {% set statuses = ['In Use','In Stock','Broken','Lost / Stolen','Archived','Auctioned'] %}
+  {% for s in statuses %}
+  <div class="col-md-2 mb-2">
+    <div class="card text-center">
+      <div class="card-body p-2">
+        <div class="fw-bold" style="font-size: 0.85rem;">{{ s }}</div>
+        <div style="font-size: 1.1rem;">{{ status_counts.get(s, 0) }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if report_type != 'movement' %}
 <div class="table-responsive">
   <table class="table table-striped table-hover">
     <thead>
@@ -127,6 +193,48 @@
     </tbody>
   </table>
 </div>
+{% else %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>Date / Time</th>
+        <th>Asset ID</th>
+        <th>Name</th>
+        <th>Serial</th>
+        <th>Province</th>
+        <th>District</th>
+        <th>Action</th>
+        <th>Field</th>
+        <th>Old Value</th>
+        <th>New Value</th>
+        <th>User</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movements or [] %}
+      <tr>
+        <td>{{ m.timestamp }}</td>
+        <td>{{ m.asset_id }}</td>
+        <td>{{ m.name }}</td>
+        <td>{{ m.serial }}</td>
+        <td>{{ m.province or '-' }}</td>
+        <td>{{ m.district or '-' }}</td>
+        <td>{{ m.action }}</td>
+        <td>{{ m.field }}</td>
+        <td>{{ m.old_value or '-' }}</td>
+        <td>{{ m.new_value or '-' }}</td>
+        <td>{{ m.user }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="11" class="text-center">No movement history for the selected filters</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 <script>
   const districtsByProvince = {
       "Head Office": [],

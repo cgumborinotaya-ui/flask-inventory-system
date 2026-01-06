@@ -2,42 +2,30 @@
 
 {% block content %}
 <h2>Edit Asset</h2>
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     <div class="mb-3">
-        <label for="name" class="form-label">Asset Name</label>
-        <input type="text" class="form-control" id="name" name="name" value="{{ asset.name }}" required>
+        <label class="form-label">Asset Name</label>
+        <p class="form-control-plaintext">{{ asset.name }}</p>
     </div>
     <div class="mb-3">
-        <label for="type" class="form-label">Type</label>
-        <select class="form-select" id="type" name="type" required onchange="toggleHealthSection()">
-            <option value="Laptop" {% if asset.type == 'Laptop' %}selected{% endif %}>Laptop</option>
-            <option value="Desktop" {% if asset.type == 'Desktop' %}selected{% endif %}>Desktop</option>
-            <option value="All-in-One" {% if asset.type == 'All-in-One' %}selected{% endif %}>All-in-One</option>
-            <option value="Tablet" {% if asset.type == 'Tablet' %}selected{% endif %}>Tablet</option>
-            <option value="Cellphone" {% if asset.type == 'Cellphone' %}selected{% endif %}>Cellphone</option>
-            <option value="Monitor" {% if asset.type == 'Monitor' %}selected{% endif %}>Monitor</option>
-            <option value="Printer" {% if asset.type == 'Printer' %}selected{% endif %}>Printer</option>
-            <option value="Projector" {% if asset.type == 'Projector' %}selected{% endif %}>Projector</option>
-            <option value="Scanner" {% if asset.type == 'Scanner' %}selected{% endif %}>Scanner</option>
-            <option value="Accessory" {% if asset.type == 'Accessory' %}selected{% endif %}>Accessory</option>
-            <option value="Other" {% if asset.type == 'Other' %}selected{% endif %}>Other</option>
-        </select>
+        <label class="form-label">Type</label>
+        <p class="form-control-plaintext">{{ asset.type }}</p>
     </div>
     <div class="mb-3">
-        <label for="serial_number" class="form-label">Serial Number</label>
-        <input type="text" class="form-control" id="serial_number" name="serial_number" value="{{ asset.serial_number }}" required>
+        <label class="form-label">Serial Number</label>
+        <p class="form-control-plaintext">{{ asset.serial_number }}</p>
     </div>
     <div class="mb-3">
-        <label for="purchase_date" class="form-label">Purchase Date</label>
-        <input type="date" class="form-control" id="purchase_date" name="purchase_date" value="{{ asset.purchase_date }}">
+        <label class="form-label">Purchase Date</label>
+        <p class="form-control-plaintext">{{ asset.purchase_date or '-' }}</p>
     </div>
     <div class="mb-3">
         <label for="assigned_to" class="form-label">Assigned To</label>
         <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
     </div>
     <div class="mb-3">
-        <label for="supplier" class="form-label">Supplier</label>
-        <input type="text" class="form-control" id="supplier" name="supplier" value="{{ asset.supplier or '' }}">
+        <label class="form-label">Supplier</label>
+        <p class="form-control-plaintext">{{ asset.supplier or '-' }}</p>
     </div>
     <div class="mb-3">
         <label for="status" class="form-label">Status</label>
@@ -45,8 +33,25 @@
             <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>
             <option value="In Use" {% if asset.status == 'In Use' %}selected{% endif %}>In Use</option>
             <option value="Broken" {% if asset.status == 'Broken' %}selected{% endif %}>Broken</option>
-            <option value="Lost" {% if asset.status == 'Lost' %}selected{% endif %}>Lost</option>
+            <option value="Lost / Stolen" {% if asset.status in ['Lost', 'Lost / Stolen'] %}selected{% endif %}>Lost / Stolen</option>
+            <option value="Auctioned" {% if asset.status == 'Auctioned' %}selected{% endif %}>Auctioned</option>
+            <option value="Archived" {% if asset.status == 'Archived' %}selected{% endif %}>Archived</option>
         </select>
+    </div>
+    <div class="mb-3">
+        <label for="repair_note" class="form-label">Repair Notes</label>
+        <textarea class="form-control" id="repair_note" name="repair_note" rows="2"></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="recovery_note" class="form-label">Recovery Notes</label>
+        <textarea class="form-control" id="recovery_note" name="recovery_note" rows="2"></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
+        <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
+        {% if existing_loss_doc %}
+        <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_loss_doc.id) }}" class="btn btn-link btn-sm">View existing document</a>
+        {% endif %}
     </div>
 
     <div id="health-section">
@@ -55,7 +60,7 @@
         <div class="row">
             <div class="col-md-6 mb-3">
             <label for="os_name" class="form-label">Operating System (OS)</label>
-            <select class="form-select" id="os_name" name="os_name">
+            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select OS</option>
                 <option value="Windows 7" {% if asset.os_name == 'Windows 7' %}selected{% endif %}>Windows 7</option>
                 <option value="Windows 8" {% if asset.os_name == 'Windows 8' %}selected{% endif %}>Windows 8</option>
@@ -68,7 +73,7 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="antivirus_name" class="form-label">Antivirus Name</label>
-            <select class="form-select" id="antivirus_name" name="antivirus_name">
+            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select Antivirus</option>
                 <option value="ESET NOD32" {% if asset.antivirus_name == 'ESET NOD32' %}selected{% endif %}>ESET NOD32</option>
                 <option value="Kaspersky" {% if asset.antivirus_name == 'Kaspersky' %}selected{% endif %}>Kaspersky</option>
@@ -83,11 +88,11 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
-            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" value="{{ asset.antivirus_license_date }}">
+            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" value="{{ asset.antivirus_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
         </div>
         <div class="col-md-6 mb-3">
             <label for="office_name" class="form-label">Office Application</label>
-            <select class="form-select" id="office_name" name="office_name">
+            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select Office Version</option>
                 <option value="Office 2007" {% if asset.office_name == 'Office 2007' %}selected{% endif %}>Office 2007</option>
                 <option value="Office 2010" {% if asset.office_name == 'Office 2010' %}selected{% endif %}>Office 2010</option>
@@ -100,7 +105,7 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="office_license_date" class="form-label">Office License Date</label>
-            <input type="date" class="form-control" id="office_license_date" name="office_license_date" value="{{ asset.office_license_date }}">
+            <input type="date" class="form-control" id="office_license_date" name="office_license_date" value="{{ asset.office_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
         </div>
     </div>
     </div>
@@ -145,12 +150,12 @@
     <h4>Inspection</h4>
     <div class="row">
         <div class="col-md-6 mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if asset.inspected_by_ict %}checked{% endif %} {% if current_role != 'IT' %}disabled{% endif %}>
+            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if asset.inspected_by_ict %}checked{% endif %} {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
             <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
         </div>
         <div class="col-md-6 mb-3">
             <label for="inspection_date" class="form-label">Inspection Date</label>
-            <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
+            <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
         </div>
     </div>
 

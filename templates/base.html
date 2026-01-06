@@ -26,14 +26,14 @@
       .sidebar .nav-link.active, .sidebar .nav-link:hover { background: #111827; color: #fff; }
       .sidebar nav { padding-left: 1.25rem; margin-top: .5rem; }
       .sidebar .nav-link { margin-bottom: .25rem; }
-      .main { margin-left: 240px; transition: margin-left .2s ease; }
+      .main { margin-left: 240px; transition: margin-left .2s ease; min-height: 100vh; }
       .topbar {
         background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: .75rem 1rem;
       }
       .ministry {
         font-weight: 700; color: #047857; letter-spacing: .3px;
       }
-      .content { padding: 1rem; }
+      .content { padding: 1rem; max-width: 1400px; margin: 0 auto; }
       .card-kpi { border: none; border-radius: .75rem; color: #fff; }
       .card-kpi .value { font-size: 24px; font-weight: 700; }
       .card-kpi .pct { font-size: 14px; opacity: .9; }
@@ -42,6 +42,13 @@
       .kpi-gray { background: #6b7280; }
       .kpi-green { background: #16a34a; }
       .kpi-red { background: #dc2626; }
+      @media (max-width: 992px) {
+        .sidebar { width: 220px; }
+        body.sidebar-collapsed .sidebar { left: -220px; }
+        .main { margin-left: 0; }
+        .content { padding: 0.75rem; max-width: 100%; }
+        .card-kpi .value { font-size: 22px; }
+      }
       @media (max-width: 576px) {
         .brand-title { font-size: 13px; }
         .brand-sub { font-size: 12px; }
@@ -49,7 +56,7 @@
         .sidebar .nav-link { padding: .8rem 1rem; font-size: 15px; }
         .topbar { padding: .6rem .75rem; }
         .ministry { font-size: 13px; }
-        .content { padding: .75rem; }
+        .content { padding: .75rem; max-width: 100%; }
         .card-kpi .value { font-size: 20px; }
         .card-kpi .pct { font-size: 13px; }
         table { font-size: 13px; }

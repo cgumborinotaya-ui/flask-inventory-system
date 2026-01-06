@@ -4,7 +4,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Asset Details</h2>
   <div>
+    {% if asset.status != 'Auctioned' %}
     <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-warning">Edit</a>
+    {% endif %}
     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
   </div>
   </div>
@@ -84,6 +86,61 @@
           {% else %}
             <span class="badge bg-success">Healthy</span>
           {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header">Activity History</div>
+      <div class="card-body">
+        {% if activities %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Field</th>
+                <th>Old Value</th>
+                <th>New Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in activities %}
+              <tr>
+                <td>{{ a.timestamp }}</td>
+                <td>{{ actor_map.get(a.actor_user_id, 'System') if a.actor_user_id else 'System' }}</td>
+                <td>{{ a.action }}</td>
+                <td>{{ a.field or '-' }}</td>
+                <td>{{ a.old_value or '-' }}</td>
+                <td>{{ a.new_value or '-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p>No activity recorded for this asset yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header">Documents</div>
+      <div class="card-body">
+        {% if docs %}
+        <ul class="list-group list-group-flush">
+          {% for d in docs %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ d.doc_type }}</strong><br>
+              <small>{{ d.timestamp }} by {{ actor_map.get(d.actor_user_id, 'System') if d.actor_user_id else 'System' }}</small>
+            </div>
+            <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">Download</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>No documents uploaded for this asset.</p>
         {% endif %}
       </div>
     </div>

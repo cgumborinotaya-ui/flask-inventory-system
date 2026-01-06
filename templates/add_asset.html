@@ -2,7 +2,7 @@
 
 {% block content %}
 <h2>Add New Asset</h2>
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     <div class="mb-3">
         <label for="name" class="form-label">Asset Name</label>
         <input type="text" class="form-control" id="name" name="name" required>
@@ -45,8 +45,12 @@
             <option value="In Stock">In Stock</option>
             <option value="In Use">In Use</option>
             <option value="Broken">Broken</option>
-            <option value="Lost">Lost</option>
+            <option value="Lost / Stolen">Lost / Stolen</option>
         </select>
+    </div>
+    <div class="mb-3" id="loss-evidence-section" style="display:none;">
+        <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
+        <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
     </div>
 
     <div id="health-section">
@@ -55,7 +59,7 @@
         <div class="row">
             <div class="col-md-6 mb-3">
             <label for="os_name" class="form-label">Operating System (OS)</label>
-            <select class="form-select" id="os_name" name="os_name">
+            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select OS</option>
                 <option value="Windows 7">Windows 7</option>
                 <option value="Windows 8">Windows 8</option>
@@ -68,7 +72,7 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="antivirus_name" class="form-label">Antivirus Name</label>
-            <select class="form-select" id="antivirus_name" name="antivirus_name">
+            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select Antivirus</option>
                 <option value="ESET NOD32">ESET NOD32</option>
                 <option value="Kaspersky">Kaspersky</option>
@@ -83,11 +87,11 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
-            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date">
+            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
         </div>
         <div class="col-md-6 mb-3">
             <label for="office_name" class="form-label">Office Application</label>
-            <select class="form-select" id="office_name" name="office_name">
+            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
                 <option value="">Select Office Version</option>
                 <option value="Office 2007">Office 2007</option>
                 <option value="Office 2010">Office 2010</option>
@@ -100,7 +104,7 @@
         </div>
         <div class="col-md-6 mb-3">
             <label for="office_license_date" class="form-label">Office License Date</label>
-            <input type="date" class="form-control" id="office_license_date" name="office_license_date">
+            <input type="date" class="form-control" id="office_license_date" name="office_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
         </div>
     </div>
     </div>
@@ -166,6 +170,20 @@
             }
         }
 
+        function toggleLossEvidence() {
+            const status = document.getElementById("status").value;
+            const section = document.getElementById("loss-evidence-section");
+            const input = document.getElementById("loss_evidence");
+            if (status === "Lost / Stolen") {
+                section.style.display = "block";
+                input.required = true;
+            } else {
+                section.style.display = "none";
+                input.required = false;
+                input.value = "";
+            }
+        }
+
         const districtsByProvince = {
             "Head Office": [],
             "Bulawayo": ["Bulawayo District"],
@@ -218,6 +236,8 @@
             }
             updateDistricts();
             toggleHealthSection();
+            toggleLossEvidence();
+            document.getElementById("status").addEventListener("change", toggleLossEvidence);
         });
     </script>
 
