@@ -133,18 +133,18 @@ class User(db.Model):
 from werkzeug.security import generate_password_hash
 
 with app.app_context():
-    db.create_all()  # ✅ ensures tables exist FIRST
+    db.create_all()
 
     user = User.query.filter_by(username="admin").first()
     if not user:
         user = User(
             username="admin",
-            password=generate_password_hash("admin123"),
+            password_hash=generate_password_hash("admin123"),
             role="admin"
         )
         db.session.add(user)
     else:
-        user.password = generate_password_hash("admin123")
+        user.password_hash = generate_password_hash("admin123")
 
     db.session.commit()
 
