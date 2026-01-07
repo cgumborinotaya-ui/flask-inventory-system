@@ -130,24 +130,6 @@ class User(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     email = db.Column(db.String(120), nullable=True)
     
-from werkzeug.security import generate_password_hash
-
-with app.app_context():
-    db.create_all()
-
-    user = User.query.filter_by(username="admin").first()
-    if not user:
-        user = User(
-            username="admin",
-            password_hash=generate_password_hash("admin123"),
-            role="admin"
-        )
-        db.session.add(user)
-    else:
-        user.password_hash = generate_password_hash("admin123")
-
-    db.session.commit()
-
 
 def login_required(f):
     @wraps(f)
