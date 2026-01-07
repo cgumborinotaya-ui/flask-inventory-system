@@ -1,0 +1,16 @@
+# Virtual environment
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database
+instance/*.db
+
+# Uploaded files
+instance/uploads/
+
+# OS junk
+.DS_Store
+Thumbs.db
