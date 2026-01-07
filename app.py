@@ -45,6 +45,9 @@ class Asset(db.Model):
     assigned_to = db.Column(db.String(100), nullable=True)
     supplier = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(50), default='In Stock')
+    acquisition_type = db.Column(db.String(20), nullable=True)
+    donor_name = db.Column(db.String(120), nullable=True)
+    capture_date = db.Column(db.Date, nullable=True)
     
     # New fields
     antivirus_name = db.Column(db.String(100), nullable=True)
@@ -315,7 +318,9 @@ def add_asset():
         type = (request.form['type'] or '').strip()
         serial_number = (request.form['serial_number'] or '').strip()
         purchase_date_str = (request.form['purchase_date'] or '').strip()
-        assigned_to = (request.form['assigned_to'] or '').strip()
+        acquisition_type = (request.form.get('acquisition_type') or '').strip()
+        donor_name = (request.form.get('donor_name') or '').strip()
+        assigned_to = (request.form.get('assigned_to') or '').strip()
         supplier = (request.form.get('supplier') or '').strip()
         status = (request.form['status'] or '').strip()
         if status == 'Lost':
@@ -331,6 +336,8 @@ def add_asset():
         inspected_by_ict = True if request.form.get('inspected_by_ict') == 'on' else False
         inspection_date_str = request.form.get('inspection_date')
         loss_file = request.files.get('loss_evidence')
+        specification_file = request.files.get('specification_document')
+        inspection_file = request.files.get('inspection_document')
 
         u = current_user()
         if not is_it():
@@ -359,8 +366,18 @@ def add_asset():
                 errors.append('Serial number already exists')
         if not purchase_date_str:
             errors.append('Purchase date is required')
-        if not supplier:
-            errors.append('Supplier is required')
+        if not acquisition_type:
+            errors.append('Acquisition Type is required')
+        if acquisition_type not in ['Purchased', 'Donated']:
+            errors.append('Invalid Acquisition Type selected')
+        if acquisition_type == 'Purchased':
+            if not supplier:
+                errors.append('Supplier is required for purchased assets')
+            if not specification_file or not specification_file.filename:
+                errors.append('Procurement specification document is required for purchased assets')
+        if acquisition_type == 'Donated':
+            if not donor_name:
+                errors.append('Donor Name is required for donated assets')
         if status not in ALLOWED_ASSET_STATUSES:
             errors.append('Invalid status selected')
         if status == 'In Use' and not assigned_to:
@@ -369,6 +386,11 @@ def add_asset():
             assigned_to = ''
         if status == 'Lost / Stolen' and (not loss_file or not loss_file.filename):
             errors.append('Police report / evidence document is required for Lost / Stolen assets')
+        if is_it() and inspected_by_ict:
+            if not inspection_date_str:
+                errors.append('Inspection date is required when marking inspected')
+            if not inspection_file or not inspection_file.filename:
+                errors.append('Inspection document is required when marking inspected')
         if not province:
             errors.append('Province is required')
         elif province != 'Head Office' and not district:
@@ -388,19 +410,35 @@ def add_asset():
             if not is_it():
                 inspected_by_ict = False
                 inspection_date = None
-            new_asset = Asset(name=name, type=type, serial_number=serial_number, 
-                              purchase_date=purchase_date, assigned_to=assigned_to, status=status,
-                              supplier=(supplier or None),
-                              antivirus_name=antivirus_name, antivirus_license_date=antivirus_license_date,
-                              office_name=office_name, office_license_date=office_license_date,
-                              os_name=os_name, province=province, district=district,
-                              inspected_by_ict=inspected_by_ict, inspection_date=inspection_date,
-                              created_by_user_id=current_user().id if current_user() else None)
+            new_asset = Asset(
+                name=name,
+                type=type,
+                serial_number=serial_number,
+                purchase_date=purchase_date,
+                assigned_to=assigned_to,
+                status=status,
+                supplier=(supplier or None),
+                acquisition_type=acquisition_type,
+                donor_name=(donor_name or None),
+                capture_date=datetime.utcnow().date(),
+                antivirus_name=antivirus_name,
+                antivirus_license_date=antivirus_license_date,
+                office_name=office_name,
+                office_license_date=office_license_date,
+                os_name=os_name,
+                province=province,
+                district=district,
+                inspected_by_ict=inspected_by_ict,
+                inspection_date=inspection_date,
+                created_by_user_id=current_user().id if current_user() else None,
+            )
             db.session.add(new_asset)
             db.session.commit()
+
+            uploads_dir = Path(app.config['UPLOAD_FOLDER'])
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+
             if loss_file and loss_file.filename:
-                uploads_dir = Path(app.config['UPLOAD_FOLDER'])
-                uploads_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
                 safe_name = secure_filename(loss_file.filename)
                 stored = f"{new_asset.id}_{ts}_{safe_name}" if safe_name else f"{new_asset.id}_{ts}"
@@ -410,10 +448,42 @@ def add_asset():
                     actor_user_id=current_user().id if current_user() else None,
                     doc_type='loss_evidence',
                     original_filename=loss_file.filename,
-                    stored_filename=stored
+                    stored_filename=stored,
                 )
                 db.session.add(doc_entry)
-                db.session.commit()
+                log_asset_activity(new_asset.id, 'upload_document', field='loss_evidence', old_value='', new_value=loss_file.filename)
+
+            if specification_file and specification_file.filename:
+                ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                safe_name = secure_filename(specification_file.filename)
+                stored = f"{new_asset.id}_{ts}_{safe_name}" if safe_name else f"{new_asset.id}_{ts}"
+                specification_file.save(str(uploads_dir / stored))
+                spec_entry = AssetDocument(
+                    asset_id=new_asset.id,
+                    actor_user_id=current_user().id if current_user() else None,
+                    doc_type='specification',
+                    original_filename=specification_file.filename,
+                    stored_filename=stored,
+                )
+                db.session.add(spec_entry)
+                log_asset_activity(new_asset.id, 'upload_document', field='specification', old_value='', new_value=specification_file.filename)
+
+            if is_it() and inspection_file and inspection_file.filename:
+                ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                safe_name = secure_filename(inspection_file.filename)
+                stored = f"{new_asset.id}_{ts}_{safe_name}" if safe_name else f"{new_asset.id}_{ts}"
+                inspection_file.save(str(uploads_dir / stored))
+                doc_entry = AssetDocument(
+                    asset_id=new_asset.id,
+                    actor_user_id=current_user().id if current_user() else None,
+                    doc_type='inspection',
+                    original_filename=inspection_file.filename,
+                    stored_filename=stored,
+                )
+                db.session.add(doc_entry)
+                log_asset_activity(new_asset.id, 'upload_document', field='inspection', old_value='', new_value=inspection_file.filename)
+
+            db.session.commit()
             log_action('add_asset', 'Asset', new_asset.id, new_asset.name)
             log_asset_activity(new_asset.id, 'create')
             flash('Asset added successfully!', 'success')
@@ -480,6 +550,7 @@ def edit_asset(id):
         posted_inspection_date_str = (request.form.get('inspection_date') or '').strip()
 
         loss_file = request.files.get('loss_evidence')
+        inspection_file = request.files.get('inspection_document')
         if posted_status == 'Lost / Stolen' and current_status != 'Lost / Stolen':
             if not loss_file and not existing_loss_doc:
                 flash('Police report / evidence document is required for Lost / Stolen assets', 'danger')
@@ -544,21 +615,37 @@ def edit_asset(id):
                 asset.os_name = posted_os
                 asset.antivirus_name = posted_antivirus
                 asset.antivirus_license_date = posted_antivirus_license_date
-                asset.office_name = posted_office
-                asset.office_license_date = posted_office_license_date
+            asset.office_name = posted_office
+            asset.office_license_date = posted_office_license_date
+
+            uploads_dir = Path(app.config['UPLOAD_FOLDER'])
+            uploads_dir.mkdir(parents=True, exist_ok=True)
 
             if not asset.inspected_by_ict and not asset.inspection_date:
                 if is_it() and posted_inspected:
+                    if not inspection_file or not inspection_file.filename:
+                        flash('Inspection document is required when marking inspected', 'danger')
+                        return render_template('edit_asset.html', asset=asset, existing_loss_doc=existing_loss_doc)
                     if not posted_inspection_date_str:
                         flash('Inspection date is required when marking inspected', 'danger')
                         return render_template('edit_asset.html', asset=asset, existing_loss_doc=existing_loss_doc)
                     asset.inspected_by_ict = True
                     asset.inspection_date = datetime.strptime(posted_inspection_date_str, '%Y-%m-%d').date()
+                    ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                    safe_name = secure_filename(inspection_file.filename)
+                    stored = f"{asset.id}_{ts}_{safe_name}" if safe_name else f"{asset.id}_{ts}"
+                    inspection_file.save(str(uploads_dir / stored))
+                    doc_entry = AssetDocument(
+                        asset_id=asset.id,
+                        actor_user_id=current_user().id if current_user() else None,
+                        doc_type='inspection',
+                        original_filename=inspection_file.filename,
+                        stored_filename=stored,
+                    )
+                    db.session.add(doc_entry)
+                    log_asset_activity(asset.id, 'upload_document', field='inspection', old_value='', new_value=inspection_file.filename)
 
-            doc_entry = None
             if loss_file and loss_file.filename:
-                uploads_dir = Path(app.config['UPLOAD_FOLDER'])
-                uploads_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
                 safe_name = secure_filename(loss_file.filename)
                 stored = f"{asset.id}_{ts}_{safe_name}" if safe_name else f"{asset.id}_{ts}"
@@ -568,9 +655,10 @@ def edit_asset(id):
                     actor_user_id=current_user().id if current_user() else None,
                     doc_type='loss_evidence',
                     original_filename=loss_file.filename,
-                    stored_filename=stored
+                    stored_filename=stored,
                 )
                 db.session.add(doc_entry)
+                log_asset_activity(asset.id, 'upload_document', field='loss_evidence', old_value='', new_value=loss_file.filename)
 
             changes = []
             def add_change(action, field, old_val, new_val):
@@ -736,6 +824,10 @@ def get_report_assets(report_type):
         q = q.filter((Asset.inspected_by_ict == False) | (Asset.inspected_by_ict.is_(None)))
     elif report_type == 'archived_auctioned':
         q = q.filter(Asset.status.in_(LOCKED_ASSET_STATUSES))
+    elif report_type == 'donated':
+        q = q.filter(Asset.acquisition_type == 'Donated')
+    elif report_type == 'purchased':
+        q = q.filter(Asset.acquisition_type == 'Purchased')
 
     # Optional filters via query params
     name = request.args.get('assigned_to') or ''
@@ -790,9 +882,11 @@ def asset_rows(assets):
             'Type': a.type,
             'Serial': a.serial_number,
             'Purchase Date': a.purchase_date.isoformat() if a.purchase_date else '',
+            'Acquisition Type': a.acquisition_type or '',
             'Status': a.status,
             'Assigned To': a.assigned_to or '',
             'Supplier': a.supplier or '',
+            'Donor Name': a.donor_name or '',
             'Province': a.province or '',
             'District': a.district or '',
             'OS': a.os_name or '',
@@ -1120,6 +1214,35 @@ def logout():
     log_action('logout')
     return redirect(url_for('login'))
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    u = current_user()
+    if not u:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        current_pw = (request.form.get('current_password') or '').strip()
+        new_pw = (request.form.get('new_password') or '').strip()
+        confirm_pw = (request.form.get('confirm_password') or '').strip()
+        if not current_pw or not new_pw or not confirm_pw:
+            flash('All password fields are required', 'danger')
+            return render_template('change_password.html')
+        if not check_password_hash(u.password_hash, current_pw):
+            flash('Current password is incorrect', 'danger')
+            return render_template('change_password.html')
+        if len(new_pw) < 8:
+            flash('New password must be at least 8 characters', 'danger')
+            return render_template('change_password.html')
+        if new_pw != confirm_pw:
+            flash('New password and confirmation do not match', 'danger')
+            return render_template('change_password.html')
+        u.password_hash = generate_password_hash(new_pw)
+        db.session.commit()
+        log_action('password_changed_self', 'User', u.id)
+        flash('Password updated successfully', 'success')
+        return redirect(url_for('index'))
+    return render_template('change_password.html')
+
 @app.route('/users', methods=['GET', 'POST'])
 @login_required
 def users():
@@ -1186,6 +1309,15 @@ def ensure_schema():
         cols = [r[1] for r in db.session.execute(text("PRAGMA table_info(asset)")).fetchall()]
         if 'supplier' not in cols:
             db.session.execute(text("ALTER TABLE asset ADD COLUMN supplier VARCHAR(120)"))
+            db.session.commit()
+        if 'acquisition_type' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN acquisition_type VARCHAR(20)"))
+            db.session.commit()
+        if 'donor_name' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN donor_name VARCHAR(120)"))
+            db.session.commit()
+        if 'capture_date' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN capture_date DATE"))
             db.session.commit()
 
 ensure_schema()

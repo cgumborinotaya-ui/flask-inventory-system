@@ -20,6 +20,10 @@
         <p class="form-control-plaintext">{{ asset.purchase_date or '-' }}</p>
     </div>
     <div class="mb-3">
+        <label class="form-label">Acquisition Type</label>
+        <p class="form-control-plaintext">{{ asset.acquisition_type or '-' }}</p>
+    </div>
+    <div class="mb-3">
         <label for="assigned_to" class="form-label">Assigned To</label>
         <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
     </div>
@@ -28,8 +32,12 @@
         <p class="form-control-plaintext">{{ asset.supplier or '-' }}</p>
     </div>
     <div class="mb-3">
+        <label class="form-label">Donor Name</label>
+        <p class="form-control-plaintext">{{ asset.donor_name or '-' }}</p>
+    </div>
+    <div class="mb-3">
         <label for="status" class="form-label">Status</label>
-        <select class="form-select" id="status" name="status" required>
+        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidenceEdit()">
             <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>
             <option value="In Use" {% if asset.status == 'In Use' %}selected{% endif %}>In Use</option>
             <option value="Broken" {% if asset.status == 'Broken' %}selected{% endif %}>Broken</option>
@@ -46,14 +54,13 @@
         <label for="recovery_note" class="form-label">Recovery Notes</label>
         <textarea class="form-control" id="recovery_note" name="recovery_note" rows="2"></textarea>
     </div>
-    <div class="mb-3">
+    <div class="mb-3" id="loss-evidence-section" style="display:{% if asset.status in ['Lost', 'Lost / Stolen'] %}block{% else %}none{% endif %};">
         <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
         <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
         {% if existing_loss_doc %}
         <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_loss_doc.id) }}" class="btn btn-link btn-sm">View existing document</a>
         {% endif %}
     </div>
-
     <div id="health-section">
         <hr>
         <h4>Health & Software Details</h4>
@@ -158,6 +165,12 @@
             <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
         </div>
     </div>
+    {% if current_role == 'IT' %}
+    <div class="mb-3">
+        <label for="inspection_document" class="form-label">Inspection Document</label>
+        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+    </div>
+    {% endif %}
 
     <script>
         function toggleHealthSection() {
@@ -171,6 +184,25 @@
                 healthSection.style.display = "none";
             }
         }
+
+        function toggleLossEvidenceEdit() {
+            const status = document.getElementById("status").value;
+            const section = document.getElementById("loss-evidence-section");
+            const input = document.getElementById("loss_evidence");
+            const hasExistingLoss = {{ 'true' if existing_loss_doc else 'false' }};
+            if (status === "Lost / Stolen") {
+                section.style.display = "block";
+                input.required = !hasExistingLoss;
+            } else {
+                section.style.display = "none";
+                input.required = false;
+                input.value = "";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            toggleLossEvidenceEdit();
+        });
 
         const districtsByProvince = {
             "Head Office": [],
@@ -228,6 +260,8 @@
             }
             updateDistricts();
             toggleHealthSection();
+            toggleLossEvidenceEdit();
+            document.getElementById("status").addEventListener("change", toggleLossEvidenceEdit);
         });
     </script>
 

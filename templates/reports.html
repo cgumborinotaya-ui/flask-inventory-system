@@ -18,6 +18,8 @@
       <option value="uninspected" {% if report_type=='uninspected' %}selected{% endif %}>Uninspected Assets</option>
       <option value="movement" {% if report_type=='movement' %}selected{% endif %}>Asset Movement History</option>
       <option value="archived_auctioned" {% if report_type=='archived_auctioned' %}selected{% endif %}>Archived & Auctioned Assets</option>
+      <option value="donated" {% if report_type=='donated' %}selected{% endif %}>Donated Assets</option>
+      <option value="purchased" {% if report_type=='purchased' %}selected{% endif %}>Purchased Assets</option>
     </select>
   </div>
   <div class="col-md-4">
@@ -150,9 +152,11 @@
         <th>Type</th>
         <th>Serial</th>
         <th>Purchase Date</th>
+        <th>Acquisition Type</th>
         <th>Status</th>
         <th>Assigned To</th>
         <th>Supplier</th>
+        <th>Donor Name</th>
         <th>Province</th>
         <th>District</th>
         <th>OS</th>
@@ -172,9 +176,11 @@
         <td>{{ a.type }}</td>
         <td>{{ a.serial_number }}</td>
         <td>{{ a.purchase_date or '-' }}</td>
+        <td>{{ a.acquisition_type or '-' }}</td>
         <td>{{ a.status }}</td>
         <td>{{ a.assigned_to or '-' }}</td>
         <td>{{ a.supplier or '-' }}</td>
+        <td>{{ a.donor_name or '-' }}</td>
         <td>{{ a.province or '-' }}</td>
         <td>{{ a.district or '-' }}</td>
         <td>{{ a.os_name or '-' }}</td>

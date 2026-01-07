@@ -157,8 +157,8 @@
                                  -
                              {% endif %}
                          </td>
-                         <td>
-                             {% if asset.eol_date %}
+                        <td>
+                            {% if asset.eol_date %}
                                  <small>EOL: {{ asset.eol_date }}</small><br>
                                  {% if asset.is_eol_passed %}
                                      <span class="badge bg-danger">Past EOL</span>
@@ -169,12 +169,12 @@
                                  -
                              {% endif %}
                          </td>
-                         <td>
-                             <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
-                                 {{ asset.status }}
-                             </span>
-                         </td>
-                         <td>{{ asset.assigned_to }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
+                                {{ asset.status }}
+                            </span>
+                        </td>
+                        <td>{{ asset.assigned_to }}</td>
                          <td>
                              {% if asset.inspected_by_ict %}
                                  <span class="badge bg-success">Inspected</span>

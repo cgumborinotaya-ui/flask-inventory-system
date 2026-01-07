@@ -32,16 +32,24 @@
         <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
     </div>
     <div class="mb-3">
-        <label for="assigned_to" class="form-label">Assigned To</label>
-        <input type="text" class="form-control" id="assigned_to" name="assigned_to">
+        <label for="acquisition_type" class="form-label">Acquisition Type</label>
+        <select class="form-select" id="acquisition_type" name="acquisition_type" required onchange="toggleAcquisitionFields()">
+            <option value="">Select Acquisition Type</option>
+            <option value="Purchased">Purchased</option>
+            <option value="Donated">Donated</option>
+        </select>
     </div>
     <div class="mb-3">
         <label for="supplier" class="form-label">Supplier</label>
         <input type="text" class="form-control" id="supplier" name="supplier">
     </div>
     <div class="mb-3">
+        <label for="donor_name" class="form-label">Donor Name</label>
+        <input type="text" class="form-control" id="donor_name" name="donor_name">
+    </div>
+    <div class="mb-3">
         <label for="status" class="form-label">Status</label>
-        <select class="form-select" id="status" name="status" required>
+        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidence()">
             <option value="In Stock">In Stock</option>
             <option value="In Use">In Use</option>
             <option value="Broken">Broken</option>
@@ -51,6 +59,10 @@
     <div class="mb-3" id="loss-evidence-section" style="display:none;">
         <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
         <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
+    </div>
+    <div class="mb-3" id="specification-section">
+        <label for="specification_document" class="form-label">Procurement Specification Document</label>
+        <input type="file" class="form-control" id="specification_document" name="specification_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
     </div>
 
     <div id="health-section">
@@ -156,6 +168,12 @@
             <input type="date" class="form-control" id="inspection_date" name="inspection_date" {% if current_role != 'IT' %}disabled{% endif %}>
         </div>
     </div>
+    {% if current_role == 'IT' %}
+    <div class="mb-3">
+        <label for="inspection_document" class="form-label">Inspection Document</label>
+        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+    </div>
+    {% endif %}
 
     <script>
         function toggleHealthSection() {
@@ -182,6 +200,39 @@
                 input.required = false;
                 input.value = "";
             }
+        }
+
+        function toggleAcquisitionFields() {
+            const acq = document.getElementById("acquisition_type").value;
+            const supplier = document.getElementById("supplier");
+            const donor = document.getElementById("donor_name");
+            const specInput = document.getElementById("specification_document");
+            supplier.required = false;
+            donor.required = false;
+            specInput.required = false;
+            if (acq === "Purchased") {
+                supplier.required = true;
+                specInput.required = true;
+                donor.value = "";
+            } else if (acq === "Donated") {
+                donor.required = true;
+                supplier.value = "";
+            } else {
+                supplier.value = "";
+                donor.value = "";
+            }
+        }
+
+        function toggleInspectionFields() {
+            const inspected = document.getElementById("inspected_by_ict");
+            const dateInput = document.getElementById("inspection_date");
+            const docInput = document.getElementById("inspection_document");
+            if (!inspected || !dateInput || !docInput) {
+                return;
+            }
+            const checked = inspected.checked && !inspected.disabled;
+            dateInput.required = checked;
+            docInput.required = checked;
         }
 
         const districtsByProvince = {
@@ -238,6 +289,12 @@
             toggleHealthSection();
             toggleLossEvidence();
             document.getElementById("status").addEventListener("change", toggleLossEvidence);
+            toggleAcquisitionFields();
+            const inspected = document.getElementById("inspected_by_ict");
+            if (inspected) {
+                inspected.addEventListener("change", toggleInspectionFields);
+            }
+            toggleInspectionFields();
         });
     </script>
 

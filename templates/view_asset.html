@@ -7,6 +7,7 @@
     {% if asset.status != 'Auctioned' %}
     <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-warning">Edit</a>
     {% endif %}
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button>
     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
   </div>
   </div>
@@ -21,9 +22,11 @@
         <p><strong>Type:</strong> {{ asset.type }}</p>
         <p><strong>Serial Number:</strong> {{ asset.serial_number }}</p>
         <p><strong>Purchase Date:</strong> {{ asset.purchase_date or '-' }}</p>
+        <p><strong>Acquisition Type:</strong> {{ asset.acquisition_type or '-' }}</p>
         <p><strong>Status:</strong> {{ asset.status }}</p>
         <p><strong>Assigned To:</strong> {{ asset.assigned_to or '-' }}</p>
         <p><strong>Supplier:</strong> {{ asset.supplier or '-' }}</p>
+        <p><strong>Donor Name:</strong> {{ asset.donor_name or '-' }}</p>
       </div>
     </div>
 
