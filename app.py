@@ -129,6 +129,13 @@ class User(db.Model):
     district = db.Column(db.String(100), nullable=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
     email = db.Column(db.String(120), nullable=True)
+from werkzeug.security import generate_password_hash
+
+with app.app_context():
+    user = User.query.filter_by(username="admin").first()
+    if user:
+        user.password = generate_password_hash("admin123")
+        db.session.commit()
 
 def login_required(f):
     @wraps(f)
