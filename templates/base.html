@@ -4,111 +4,241 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ICT Asset Inventory</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-      body { background: #f4f6f9; }
-      body.sidebar-collapsed .sidebar { left: -240px; }
-      body.sidebar-collapsed .main { margin-left: 0; }
+      :root {
+        --sidebar-width: 260px;
+        --sidebar-bg: #1e293b;
+        --sidebar-text: #e2e8f0;
+        --primary-color: #3b82f6;
+        --accent-color: #0ea5e9;
+        --bg-color: #f1f5f9;
+        --text-color: #334155;
+        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        overflow-x: hidden;
+      }
+      /* Sidebar */
       .sidebar {
-        position: fixed; top: 0; left: 0; bottom: 0; width: 240px;
-        background: linear-gradient(180deg,#1f2937 0%, #0b1321 100%); color: #cbd5e1;
-        padding-top: 1rem;
+        position: fixed; top: 0; left: 0; bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        z-index: 1000;
+        transition: transform 0.3s ease-in-out;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.1);
       }
-      .sidebar .brand { color: #fff; padding: 0 1rem; margin-bottom: 1rem; }
+      .sidebar .brand {
+        padding: 1.5rem;
+        background: rgba(0,0,0,0.1);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
       .brand-logo {
-        height: 40px; width: 40px; object-fit: contain; display: inline-block;
-        background: #000; border-radius: 6px; padding: 4px;
+        height: 42px; width: 42px;
+        background: #fff; border-radius: 8px; padding: 4px;
+        box-shadow: 0 0 15px rgba(255,255,255,0.2);
       }
-      .brand-title { font-weight: 700; font-size: 14px; letter-spacing: .4px; }
-      .brand-sub { color: #9ca3af; }
-      .sidebar .nav-link { color: #cbd5e1; padding: .6rem 1rem; border-radius: .375rem; display: block; }
-      .sidebar .nav-link.active, .sidebar .nav-link:hover { background: #111827; color: #fff; }
-      .sidebar nav { padding-left: 1.25rem; margin-top: .5rem; }
-      .sidebar .nav-link { margin-bottom: .25rem; }
-      .main { margin-left: 240px; transition: margin-left .2s ease; min-height: 100vh; }
+      .brand-title {
+        font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px; color: #fff;
+      }
+      .brand-sub {
+        font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
+      }
+      .sidebar nav { padding: 1rem 0.75rem; }
+      .nav-category {
+        font-size: 0.7rem; text-transform: uppercase; color: #64748b;
+        font-weight: 700; margin: 1.5rem 0 0.5rem 1rem; letter-spacing: 0.5px;
+      }
+      .sidebar .nav-link {
+        color: #cbd5e1; padding: 0.75rem 1rem; border-radius: 0.5rem;
+        margin-bottom: 0.25rem; transition: all 0.2s;
+        font-weight: 500; font-size: 0.95rem;
+      }
+      .sidebar .nav-link:hover {
+        background: rgba(255,255,255,0.05); color: #fff; transform: translateX(3px);
+      }
+      .sidebar .nav-link.active {
+        background: var(--primary-color); color: #fff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      }
+      .sidebar .nav-link i { width: 24px; text-align: center; margin-right: 0.5rem; opacity: 0.9; }
+
+      /* Main Content */
+      .main {
+        margin-left: var(--sidebar-width);
+        transition: margin-left 0.3s ease-in-out;
+        min-height: 100vh;
+        display: flex; flex-direction: column;
+      }
       .topbar {
-        background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: .75rem 1rem;
+        background: #fff; border-bottom: 1px solid #e2e8f0;
+        padding: 1rem 2rem;
+        display: flex; justify-content: space-between; align-items: center;
+        position: sticky; top: 0; z-index: 900;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       }
-      .ministry {
-        font-weight: 700; color: #047857; letter-spacing: .3px;
+      .ministry-badge {
+        background: #ecfdf5; color: #047857;
+        padding: 0.5rem 1rem; border-radius: 2rem;
+        font-weight: 600; font-size: 0.85rem; border: 1px solid #d1fae5;
       }
-      .content { padding: 1rem; max-width: 1400px; margin: 0 auto; }
-      .card-kpi { border: none; border-radius: .75rem; color: #fff; }
-      .card-kpi .value { font-size: 24px; font-weight: 700; }
-      .card-kpi .pct { font-size: 14px; opacity: .9; }
-      .kpi-blue { background: #1d4ed8; }
-      .kpi-yellow { background: #f59e0b; }
-      .kpi-gray { background: #6b7280; }
-      .kpi-green { background: #16a34a; }
-      .kpi-red { background: #dc2626; }
+      .user-menu {
+        display: flex; align-items: center; gap: 1rem;
+      }
+      .user-avatar {
+        width: 36px; height: 36px; background: #e0f2fe; color: #0369a1;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 600; font-size: 1rem;
+      }
+      .content {
+        padding: 2rem; flex: 1;
+      }
+      
+      /* Cards & Components */
+      .card {
+        border: none; border-radius: 1rem;
+        background: #fff; box-shadow: var(--card-shadow);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .card-header {
+        background: transparent; border-bottom: 1px solid #f1f5f9;
+        padding: 1.25rem 1.5rem; font-weight: 600; color: #1e293b;
+        font-size: 1rem;
+      }
+      .card-body { padding: 1.5rem; }
+      
+      /* KPI Cards */
+      .kpi-card {
+        color: #fff; overflow: hidden; position: relative;
+      }
+      .kpi-card .value { font-size: 2.25rem; font-weight: 700; line-height: 1.2; }
+      .kpi-card .label { font-size: 0.9rem; opacity: 0.9; font-weight: 500; }
+      .kpi-card .icon {
+        position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+        font-size: 4rem; opacity: 0.15;
+      }
+      .bg-gradient-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+      .bg-gradient-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+      .bg-gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+      .bg-gradient-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+      
+      /* Buttons */
+      .btn {
+        padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 500;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: var(--primary-color); border: none;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+      }
+      .btn-primary:hover {
+        background: #2563eb; transform: translateY(-1px);
+        box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+      }
+      
+      /* Footer */
+      .footer-copy {
+        text-align: center; padding: 1.5rem; color: #94a3b8; font-size: 0.85rem;
+        border-top: 1px solid #e2e8f0; background: #fff;
+      }
+
+      /* Responsive */
+      body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+      body.sidebar-collapsed .main { margin-left: 0; }
+      
       @media (max-width: 992px) {
-        .sidebar { width: 220px; }
-        body.sidebar-collapsed .sidebar { left: -220px; }
+        .sidebar { transform: translateX(-100%); }
         .main { margin-left: 0; }
-        .content { padding: 0.75rem; max-width: 100%; }
-        .card-kpi .value { font-size: 22px; }
-      }
-      @media (max-width: 576px) {
-        .brand-title { font-size: 13px; }
-        .brand-sub { font-size: 12px; }
-        .sidebar nav { padding-left: 1.5rem; }
-        .sidebar .nav-link { padding: .8rem 1rem; font-size: 15px; }
-        .topbar { padding: .6rem .75rem; }
-        .ministry { font-size: 13px; }
-        .content { padding: .75rem; max-width: 100%; }
-        .card-kpi .value { font-size: 20px; }
-        .card-kpi .pct { font-size: 13px; }
-        table { font-size: 13px; }
+        body.sidebar-open .sidebar { transform: translateX(0); }
+        .content { padding: 1rem; }
       }
     </style>
   </head>
   <body>
     <aside class="sidebar">
-      <div class="brand d-flex align-items-center gap-2">
+      <div class="brand d-flex align-items-center gap-3">
         {% if logo_url %}
-        <img class="brand-logo" src="{{ logo_url }}" alt="" onerror="this.remove()">
+        <img class="brand-logo" src="{{ logo_url }}" alt="Logo" onerror="this.style.display='none'">
         {% endif %}
         <div>
-          <div class="brand-title">MWACSMED</div>
-          <div class="brand-sub small">IT Asset Reg</div>
+          <div class="brand-title">AssetMaster</div>
+          <div class="brand-sub">Inventory Control</div>
         </div>
       </div>
       <nav class="nav flex-column">
-        <a class="nav-link {% if request.endpoint=='index' %}active{% endif %}" href="{{ url_for('index') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
-        <a class="nav-link {% if request.endpoint=='add_asset' %}active{% endif %}" href="{{ url_for('add_asset') }}"><i class="bi bi-plus-square me-2"></i>Add Asset</a>
-        <a class="nav-link {% if request.endpoint=='reports' %}active{% endif %}" href="{{ url_for('reports') }}"><i class="bi bi-graph-up me-2"></i>Reports</a>
+        <div class="nav-category">Main Menu</div>
+        <a class="nav-link {% if request.endpoint=='index' %}active{% endif %}" href="{{ url_for('index') }}">
+          <i class="bi bi-grid-1x2-fill"></i> Dashboard
+        </a>
+        <a class="nav-link {% if request.endpoint=='add_asset' %}active{% endif %}" href="{{ url_for('add_asset') }}">
+          <i class="bi bi-plus-circle-fill"></i> Add Asset
+        </a>
+        <a class="nav-link {% if request.endpoint=='reports' %}active{% endif %}" href="{{ url_for('reports') }}">
+          <i class="bi bi-bar-chart-fill"></i> Reports
+        </a>
+        
         {% if current_role == 'IT' %}
-        <a class="nav-link {% if request.endpoint=='users' %}active{% endif %}" href="{{ url_for('users') }}"><i class="bi bi-people me-2"></i>Users</a>
-        <a class="nav-link {% if request.endpoint=='audit' %}active{% endif %}" href="{{ url_for('audit') }}"><i class="bi bi-clipboard-data me-2"></i>Audit</a>
+        <div class="nav-category">Administration</div>
+        <a class="nav-link {% if request.endpoint=='users' %}active{% endif %}" href="{{ url_for('users') }}">
+          <i class="bi bi-people-fill"></i> Users
+        </a>
+        <a class="nav-link {% if request.endpoint=='audit' %}active{% endif %}" href="{{ url_for('audit') }}">
+          <i class="bi bi-shield-check"></i> Audit Logs
+        </a>
         {% endif %}
+
+        <div class="nav-category">Account</div>
         {% if current_user %}
-        <a class="nav-link {% if request.endpoint=='change_password' %}active{% endif %}" href="{{ url_for('change_password') }}"><i class="bi bi-key me-2"></i>Change Password</a>
-        <a class="nav-link" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+        <a class="nav-link {% if request.endpoint=='change_password' %}active{% endif %}" href="{{ url_for('change_password') }}">
+          <i class="bi bi-key-fill"></i> Change Password
+        </a>
+        <a class="nav-link" href="{{ url_for('logout') }}">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
         {% else %}
-        <a class="nav-link {% if request.endpoint=='login' %}active{% endif %}" href="{{ url_for('login') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Login</a>
+        <a class="nav-link {% if request.endpoint=='login' %}active{% endif %}" href="{{ url_for('login') }}">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
         {% endif %}
       </nav>
     </aside>
+
     <div class="main">
-      <div class="topbar d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-outline-secondary btn-sm" id="sidebarToggle"><i class="bi bi-list"></i></button>
-          <div class="ministry">{{ ministry_name }}</div>
+      <div class="topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-light border btn-sm" id="sidebarToggle">
+            <i class="bi bi-list fs-5"></i>
+          </button>
+          <div class="ministry-badge d-none d-md-block">
+            <i class="bi bi-building me-1"></i> {{ ministry_name }}
+          </div>
         </div>
-        <div class="text-muted small text-end">
+        <div class="user-menu">
           {% if current_user %}
-          <div>You are logged in as {{ current_user.username }}</div>
+          <div class="text-end d-none d-sm-block">
+            <div class="fw-bold small text-dark">{{ current_user.username }}</div>
+            <div class="text-muted" style="font-size: 0.75rem;">{{ current_role }}</div>
+          </div>
+          <div class="user-avatar">
+            {{ current_user.username[0]|upper }}
+          </div>
           {% endif %}
-          <div><i class="bi bi-house-door me-1"></i>Home / {{ request.endpoint|capitalize }}</div>
         </div>
       </div>
+
       <div class="content">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-              {{ message }}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm border-0" role="alert">
+              <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           {% endfor %}
@@ -117,24 +247,24 @@
 
       {% block content %}{% endblock %}
       </div>
-      <div class="footer-copy">© 2026 MWACSMED IT ASSET REG.</div>
+      
+      <div class="footer-copy">
+        &copy; 2026 MWACSMED IT Asset Registry System. All rights reserved.
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       const btn = document.getElementById('sidebarToggle');
       btn && btn.addEventListener('click', () => {
-        document.body.classList.toggle('sidebar-collapsed');
-      });
-      function autoCollapse() {
         if (window.innerWidth < 992) {
-          document.body.classList.add('sidebar-collapsed');
+          document.body.classList.toggle('sidebar-open');
         } else {
-          document.body.classList.remove('sidebar-collapsed');
+          document.body.classList.toggle('sidebar-collapsed');
         }
-      }
-      autoCollapse();
-      window.addEventListener('resize', autoCollapse);
+      });
+      
+      // Auto-handle inactivity
       let lastActive = Date.now();
       ['click','keydown','mousemove','touchstart','scroll'].forEach(ev => {
         window.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true });

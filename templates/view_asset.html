@@ -1,152 +1,404 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Asset Details</h2>
+<style>
+  @media print {
+    @page { margin: 1.5cm; size: auto; }
+    body { background: #fff !important; color: #000 !important; visibility: visible !important; }
+    
+    /* Hide non-printable elements */
+    .sidebar, .topbar, .footer-copy, .btn, .nav-tabs, .alert, .modal, .breadcrumb {
+      display: none !important;
+    }
+    
+    /* Reset Layout */
+    .main { margin: 0 !important; width: 100% !important; }
+    .content { padding: 0 !important; margin: 0 !important; }
+    .container-fluid { padding: 0 !important; }
+    
+    /* Cards */
+    .card {
+      border: 1px solid #ddd !important;
+      box-shadow: none !important;
+      margin-bottom: 1.5rem !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .card-header {
+      background-color: #f8f9fa !important;
+      border-bottom: 1px solid #ddd !important;
+      color: #000 !important;
+    }
+    
+    /* Tabs - Show all content stacked */
+    .tab-content { border: none !important; }
+    .tab-pane {
+      display: block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      margin-top: 2rem;
+      page-break-inside: avoid;
+    }
+    
+    /* Custom Print Headers */
+    .print-only-header {
+      display: block !important;
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #333;
+      padding-bottom: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    /* Grid - Stack columns for better readability */
+    .col-lg-8, .col-lg-4 {
+      width: 100% !important;
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Tables and Lists */
+    .table { color: #000 !important; }
+    .timeline, .list-group { overflow: visible !important; }
+    
+    /* Badges */
+    .badge {
+      border: 1px solid #000;
+      color: #000 !important;
+      background: transparent !important;
+    }
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    {% if asset.status != 'Auctioned' %}
-    <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-warning">Edit</a>
+    <h2 class="fw-bold mb-1">{{ asset.name }}</h2>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-secondary">{{ asset.type }}</span>
+      <span class="badge {% if asset.status == 'In Stock' %}bg-success{% elif asset.status == 'In Use' %}bg-primary{% elif asset.status == 'Broken' %}bg-warning text-dark{% elif asset.status in ['Lost', 'Lost / Stolen'] %}bg-danger{% else %}bg-secondary{% endif %}">
+        {{ asset.status }}
+      </span>
+      <span class="text-muted small ms-2"><i class="bi bi-upc-scan me-1"></i>{{ asset.serial_number }}</span>
+    </div>
+  </div>
+  
+  <div class="d-flex gap-2">
+    {% if asset.status != 'Auctioned' and asset.status != 'Archived' %}
+    <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-warning">
+      <i class="bi bi-pencil-square me-1"></i>Edit
+    </a>
     {% endif %}
-    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+    {% if asset.status == 'Archived' and current_role in ['IT', 'Admin', 'AdminProvince'] %}
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#auctionModal">
+      <i class="bi bi-hammer me-1"></i>Auction
+    </button>
+    {% endif %}
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+      <i class="bi bi-printer me-1"></i>Print
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
   </div>
-  </div>
+</div>
 
-<div class="row">
-  <div class="col-lg-6">
-    <div class="card mb-3">
-      <div class="card-header">General</div>
-      <div class="card-body">
-        <p><strong>ID:</strong> {{ asset.id }}</p>
-        <p><strong>Name:</strong> {{ asset.name }}</p>
-        <p><strong>Type:</strong> {{ asset.type }}</p>
-        <p><strong>Serial Number:</strong> {{ asset.serial_number }}</p>
-        <p><strong>Purchase Date:</strong> {{ asset.purchase_date or '-' }}</p>
-        <p><strong>Acquisition Type:</strong> {{ asset.acquisition_type or '-' }}</p>
-        <p><strong>Status:</strong> {{ asset.status }}</p>
-        <p><strong>Assigned To:</strong> {{ asset.assigned_to or '-' }}</p>
-        <p><strong>Supplier:</strong> {{ asset.supplier or '-' }}</p>
-        <p><strong>Donor Name:</strong> {{ asset.donor_name or '-' }}</p>
+<!-- Auction Modal -->
+<div class="modal fade" id="auctionModal" tabindex="-1" aria-labelledby="auctionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="auctionModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Auction Asset</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header">Location</div>
-      <div class="card-body">
-        <p><strong>Province:</strong> {{ asset.province or '-' }}</p>
-        <p><strong>District:</strong> {{ asset.district or '-' }}</p>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header">Inspection</div>
-      <div class="card-body">
-        {% if asset.inspected_by_ict %}
-          <span class="badge bg-success mb-2">Inspected</span>
-        {% else %}
-          <span class="badge bg-secondary mb-2">Not inspected</span>
-        {% endif %}
-        <p><strong>Inspection Date:</strong> {{ asset.inspection_date or '-' }}</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-6">
-    <div class="card mb-3">
-      <div class="card-header">Health & Software</div>
-      <div class="card-body">
-        <p><strong>OS:</strong> {{ asset.os_name or '-' }}</p>
-        <p><strong>Antivirus:</strong> 
-          {% if asset.antivirus_name %}
-            {{ asset.antivirus_name }}
-            {% if asset.is_antivirus_expired %}
-              <span class="badge bg-danger ms-2">Expired</span>
-            {% endif %}
-          {% else %}-{% endif %}
-        </p>
-        <p><strong>Antivirus License Date:</strong> {{ asset.antivirus_license_date or '-' }}</p>
-        <p><strong>Office:</strong> 
-          {% if asset.office_name %}
-            {{ asset.office_name }}
-            {% if asset.is_office_expired %}
-              <span class="badge bg-danger ms-2">Expired</span>
-            {% endif %}
-          {% else %}-{% endif %}
-        </p>
-        <p><strong>Office License Date:</strong> {{ asset.office_license_date or '-' }}</p>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header">Lifecycle</div>
-      <div class="card-body">
-        <p><strong>EOL Date:</strong> {{ asset.eol_date or '-' }}</p>
-        {% if asset.eol_date %}
-          {% if asset.is_eol_passed %}
-            <span class="badge bg-danger">Past EOL</span>
-          {% elif asset.is_eol_approaching %}
-            <span class="badge bg-warning text-dark">Approaching EOL</span>
-          {% else %}
-            <span class="badge bg-success">Healthy</span>
-          {% endif %}
-        {% endif %}
-      </div>
-    </div>
-    <div class="card mb-3">
-      <div class="card-header">Activity History</div>
-      <div class="card-body">
-        {% if activities %}
-        <div class="table-responsive">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Date/Time</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Field</th>
-                <th>Old Value</th>
-                <th>New Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for a in activities %}
-              <tr>
-                <td>{{ a.timestamp }}</td>
-                <td>{{ actor_map.get(a.actor_user_id, 'System') if a.actor_user_id else 'System' }}</td>
-                <td>{{ a.action }}</td>
-                <td>{{ a.field or '-' }}</td>
-                <td>{{ a.old_value or '-' }}</td>
-                <td>{{ a.new_value or '-' }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <form action="{{ url_for('auction_asset', id=asset.id) }}" method="POST">
+        <div class="modal-body">
+          <p class="fw-bold">Are you sure you want to mark this asset as Auctioned?</p>
+          <p class="text-muted small">This action is irreversible and will permanently change the asset status.</p>
+          <div class="mb-3">
+            <label for="auction_comment" class="form-label">Reason / Comment (Required)</label>
+            <textarea class="form-control" id="auction_comment" name="auction_comment" rows="3" required placeholder="Enter auction details..."></textarea>
+          </div>
         </div>
-        {% else %}
-        <p>No activity recorded for this asset yet.</p>
-        {% endif %}
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Confirm Auction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Core Details -->
+  <div class="col-lg-8">
+    <!-- General Info Card -->
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+        <h5 class="card-title fw-bold text-primary"><i class="bi bi-info-circle me-2"></i>General Information</h5>
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Category</label>
+            <p class="fw-medium mb-0">{{ asset.category or 'ICT' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Purchase Date</label>
+            <p class="fw-medium mb-0">{{ asset.purchase_date or '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Acquisition Type</label>
+            <p class="fw-medium mb-0">{{ asset.acquisition_type or '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Supplier</label>
+            <p class="fw-medium mb-0">{{ asset.supplier or '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Donor Name</label>
+            <p class="fw-medium mb-0">{{ asset.donor_name or '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Assigned To</label>
+            <p class="fw-medium mb-0">{{ asset.assigned_to or '-' }}</p>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="card mb-3">
-      <div class="card-header">Documents</div>
-      <div class="card-body">
-        {% if docs %}
-        <ul class="list-group list-group-flush">
-          {% for d in docs %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <strong>{{ d.doc_type }}</strong><br>
-              <small>{{ d.timestamp }} by {{ actor_map.get(d.actor_user_id, 'System') if d.actor_user_id else 'System' }}</small>
+
+    <!-- Health & Software Card -->
+    {% if asset.category == 'ICT' or not asset.category %}
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+        <h5 class="card-title fw-bold text-success"><i class="bi bi-cpu me-2"></i>Health & Software</h5>
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Operating System</label>
+            <p class="fw-medium mb-0">{{ asset.os_name or '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Antivirus</label>
+            <p class="fw-medium mb-0">
+              {% if asset.antivirus_name %}
+                {{ asset.antivirus_name }}
+                {% if asset.is_antivirus_expired %}
+                  <span class="badge bg-danger ms-1">Expired</span>
+                {% else %}
+                  <span class="badge bg-success ms-1">Active</span>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </p>
+            {% if asset.antivirus_license_date %}
+            <small class="text-muted">Lic: {{ asset.antivirus_license_date }}</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Office Application</label>
+            <p class="fw-medium mb-0">
+              {% if asset.office_name %}
+                {{ asset.office_name }}
+                {% if asset.is_office_expired %}
+                  <span class="badge bg-danger ms-1">Expired</span>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </p>
+            {% if asset.office_license_date %}
+            <small class="text-muted">Lic: {{ asset.office_license_date }}</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted small text-uppercase">Lifecycle Status</label>
+            <div class="mt-1">
+            {% if asset.eol_date %}
+              {% if asset.is_eol_passed %}
+                <span class="badge bg-danger">Past EOL ({{ asset.eol_date }})</span>
+              {% elif asset.is_eol_approaching %}
+                <span class="badge bg-warning text-dark">Approaching EOL ({{ asset.eol_date }})</span>
+              {% else %}
+                <span class="badge bg-success">Healthy (EOL: {{ asset.eol_date }})</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
             </div>
-            <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">Download</a>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p>No documents uploaded for this asset.</p>
-        {% endif %}
+          </div>
+        </div>
       </div>
     </div>
+    {% endif %}
+
+    <!-- Comments & Activity Tabs -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom px-4 pt-3">
+        <ul class="nav nav-tabs card-header-tabs" id="assetTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab">
+              <i class="bi bi-chat-left-text me-2"></i>Comments
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+              <i class="bi bi-clock-history me-2"></i>History
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">
+              <i class="bi bi-file-earmark-text me-2"></i>Documents
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body p-4">
+        <div class="tab-content" id="assetTabsContent">
+          <!-- Comments Tab -->
+          <div class="tab-pane fade show active" id="comments" role="tabpanel">
+            <h4 class="d-none d-print-block print-only-header">Comments</h4>
+            {% if asset.comments %}
+            <div class="timeline">
+              {% for c in asset.comments %}
+              <div class="d-flex mb-3">
+                <div class="flex-shrink-0">
+                  <div class="avatar bg-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-person-fill"></i>
+                  </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                  <div class="bg-light p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <strong class="text-dark">{{ c.user.username if c.user else 'System' }}</strong>
+                      <small class="text-muted">{{ c.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <p class="mb-0 text-secondary">{{ c.content }}</p>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-chat-square-dots display-4 mb-2 d-block"></i>
+              No comments available.
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Activity Tab -->
+          <div class="tab-pane fade" id="activity" role="tabpanel">
+            <h4 class="d-none d-print-block print-only-header">Activity History</h4>
+            {% if activities %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for a in activities %}
+                  <tr>
+                    <td class="text-nowrap">{{ a.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ actor_map.get(a.actor_user_id, 'System') if a.actor_user_id else 'System' }}</td>
+                    <td><span class="badge bg-secondary">{{ a.action }}</span></td>
+                    <td class="small">
+                      {% if a.field %}
+                        Changed <strong>{{ a.field }}</strong> from <span class="text-danger">{{ a.old_value or 'empty' }}</span> to <span class="text-success">{{ a.new_value or 'empty' }}</span>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">No activity recorded yet.</p>
+            {% endif %}
+          </div>
+
+          <!-- Documents Tab -->
+          <div class="tab-pane fade" id="docs" role="tabpanel">
+            <h4 class="d-none d-print-block print-only-header">Documents</h4>
+            {% if docs %}
+            <div class="list-group list-group-flush">
+              {% for d in docs %}
+              <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i>
+                  <div>
+                    <h6 class="mb-0">{{ d.doc_type }}</h6>
+                    <small class="text-muted">Uploaded on {{ d.timestamp.strftime('%Y-%m-%d') }} by {{ actor_map.get(d.actor_user_id, 'System') if d.actor_user_id else 'System' }}</small>
+                  </div>
+                </div>
+                <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-download me-1"></i>Download
+                </a>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">No documents uploaded.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Location & Inspection -->
+  <div class="col-lg-4">
+    <!-- Location Card -->
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+        <h5 class="card-title fw-bold text-info"><i class="bi bi-geo-alt me-2"></i>Location</h5>
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="mb-3">
+          <label class="text-muted small text-uppercase">Province</label>
+          <p class="fs-5 mb-0 fw-bold">{{ asset.province or '-' }}</p>
+        </div>
+        <div class="mb-3">
+          <label class="text-muted small text-uppercase">District</label>
+          <p class="fs-5 mb-0">{{ asset.district or '-' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspection Card -->
+    {% if asset.category == 'ICT' or not asset.category %}
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+        <h5 class="card-title fw-bold text-warning"><i class="bi bi-clipboard-check me-2"></i>Inspection</h5>
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="d-flex align-items-center mb-3">
+          {% if asset.inspected_by_ict %}
+            <i class="bi bi-check-circle-fill text-success fs-3 me-3"></i>
+            <div>
+              <h6 class="mb-0 fw-bold">Inspected by ICT</h6>
+              <small class="text-muted">{{ asset.inspection_date or 'Date unknown' }}</small>
+            </div>
+          {% else %}
+            <i class="bi bi-x-circle-fill text-secondary fs-3 me-3"></i>
+            <div>
+              <h6 class="mb-0 text-muted">Not Inspected</h6>
+              <small class="text-muted">Pending ICT review</small>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

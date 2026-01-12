@@ -1,337 +1,336 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h3 class="mb-3">Dashboard</h3>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 fw-bold">Dashboard Overview</h3>
+    <a href="{{ url_for('add_asset') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Add Asset
+    </a>
+</div>
 
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card card-kpi kpi-blue p-3">
+<div class="row g-4 mb-4">
+  <div class="col">
+    <div class="card kpi-card bg-gradient-blue p-4">
       <div class="value">{{ stats.total }}</div>
-      <div class="pct">Total</div>
+      <div class="label">Total Assets</div>
+      <i class="bi bi-layers-fill icon"></i>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card card-kpi kpi-yellow p-3">
+  <div class="col">
+    <div class="card kpi-card bg-gradient-orange p-4">
       <div class="value">{{ stats.computers }}</div>
-      <div class="pct">Computers</div>
+      <div class="label">Computers</div>
+      <i class="bi bi-pc-display icon"></i>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card card-kpi kpi-green p-3">
+  <div class="col">
+    <div class="card kpi-card bg-gradient-purple p-4">
       <div class="value">{{ stats.mobile }}</div>
-      <div class="pct">Mobile (Cellphones/Tablets)</div>
+      <div class="label">Mobile Devices</div>
+      <i class="bi bi-phone-fill icon"></i>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card card-kpi kpi-red p-3">
+  <div class="col">
+    <div class="card kpi-card bg-gradient-green p-4">
+      <div class="value">{{ stats.furniture }}</div>
+      <div class="label">Furniture</div>
+      <i class="bi bi-collection icon"></i>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card kpi-card bg-secondary text-white p-4" style="background: linear-gradient(45deg, #6c757d, #495057);">
       <div class="value">{{ stats.uninspected }}</div>
-      <div class="pct">Uninspected</div>
+      <div class="label">Uninspected (IT)</div>
+      <i class="bi bi-clipboard-x icon"></i>
     </div>
   </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-4 mb-5">
   <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header">Assets by Province</div>
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Assets by Province</span>
+        <i class="bi bi-geo-alt text-muted"></i>
+      </div>
       <div class="card-body">
         {% for prov, count in top_provinces %}
-          <div class="mb-2">
-            <div class="d-flex justify-content-between"><strong>{{ prov }}</strong><span>{{ count }}</span></div>
-            <div class="progress" style="height: 8px;">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <strong class="text-muted small">{{ prov }}</strong>
+                <span class="fw-bold">{{ count }}</span>
+            </div>
+            <div class="progress" style="height: 6px;">
               <div class="progress-bar bg-success" role="progressbar" style="width: {{ (count / (stats.total or 1) * 100)|round(1) }}%"></div>
             </div>
           </div>
         {% else %}
-          <div class="text-muted">No provincial data</div>
+          <div class="text-muted text-center py-4">No provincial data available</div>
         {% endfor %}
       </div>
     </div>
   </div>
   <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header">Assets by Type</div>
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Assets by Type</span>
+        <i class="bi bi-pie-chart text-muted"></i>
+      </div>
       <div class="card-body">
         {% for t, cnt in type_counts.items() %}
-          <div class="mb-2">
-            <div class="d-flex justify-content-between"><strong>{{ t }}</strong><span>{{ cnt }}</span></div>
-            <div class="progress" style="height: 8px;">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <strong class="text-muted small">{{ t }}</strong>
+                <span class="fw-bold">{{ cnt }}</span>
+            </div>
+            <div class="progress" style="height: 6px;">
               <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (cnt / (stats.total or 1) * 100)|round(1) }}%"></div>
             </div>
           </div>
         {% else %}
-          <div class="text-muted">No type data</div>
+          <div class="text-muted text-center py-4">No type data available</div>
         {% endfor %}
       </div>
     </div>
   </div>
 </div>
 
-<form method="GET" action="{{ url_for('index') }}" class="row g-2 mb-3">
-  <div class="col-md-4">
-    <label class="form-label">Search by Name</label>
-    <input type="text" name="name" class="form-control" value="{{ name_q or '' }}" placeholder="Enter asset name">
-  </div>
-  <div class="col-md-4">
-    <label class="form-label">Search by Serial Number</label>
-    <input type="text" name="serial" class="form-control" value="{{ serial_q or '' }}" placeholder="Enter serial number">
-  </div>
-  <div class="col-md-4 d-flex align-items-end">
-    <button type="submit" class="btn btn-primary me-2">Search</button>
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Clear</a>
-  </div>
-</form>
+<div class="card mb-4">
+    <div class="card-body bg-light rounded-3">
+        <form method="GET" action="{{ url_for('index') }}" class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label text-muted small fw-bold text-uppercase">Search by Name</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" name="name" class="form-control border-start-0 ps-0" value="{{ name_q or '' }}" placeholder="Enter asset name...">
+            </div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label text-muted small fw-bold text-uppercase">Search by Serial Number</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-upc-scan"></i></span>
+                <input type="text" name="serial" class="form-control border-start-0 ps-0" value="{{ serial_q or '' }}" placeholder="Enter serial number...">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+          </div>
+        </form>
+    </div>
+</div>
 
-<ul class="nav nav-tabs mb-3" id="assetTabs" role="tablist">
+<ul class="nav nav-pills mb-3 gap-2" id="assetTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="computers-tab" data-bs-toggle="tab" data-bs-target="#computers" type="button" role="tab" aria-controls="computers" aria-selected="true">Computers (Laptops, Desktops, All-in-One)</button>
+        <button class="nav-link active rounded-pill px-4" id="ict-tab" data-bs-toggle="tab" data-bs-target="#ict" type="button">
+            <i class="bi bi-pc-display me-2"></i>ICT Assets
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="peripherals-tab" data-bs-toggle="tab" data-bs-target="#peripherals" type="button" role="tab" aria-controls="peripherals" aria-selected="false">Peripherals & Others</button>
+        <button class="nav-link rounded-pill px-4" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button">
+            <i class="bi bi-collection me-2"></i>Furniture & General
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" type="button" role="tab" aria-controls="archived" aria-selected="false">Archived & Auctioned</button>
+        <button class="nav-link rounded-pill px-4" id="archived-tab" data-bs-toggle="tab" data-bs-target="#archived" type="button">
+            <i class="bi bi-archive me-2"></i>Archived
+        </button>
     </li>
 </ul>
 
 <div class="tab-content" id="assetTabsContent">
-    <!-- Computers Tab -->
-    <div class="tab-pane fade show active" id="computers" role="tabpanel" aria-labelledby="computers-tab">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                 <thead>
-                     <tr>
-                         <th>ID</th>
-                         <th>Name</th>
-                         <th>Type</th>
-                         <th>OS</th>
-                         <th>Antivirus</th>
-                         <th>Office</th>
-                         <th>Location</th>
-                         <th>Lifecycle</th>
-                         <th>Status</th>
-                         <th>Assigned To</th>
-                         <th>Inspection</th>
-                         <th>Actions</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                     {% for asset in assets %}
-                     {% if asset.type in ['Laptop', 'Desktop', 'All-in-One'] %}
-                     <tr>
-                         <td>{{ asset.id }}</td>
-                         <td>{{ asset.name }}</td>
-                         <td>{{ asset.type }}</td>
-                         <td>{{ asset.os_name or '-' }}</td>
-                         <td>
-                             {% if asset.antivirus_name %}
-                                 {{ asset.antivirus_name }}
-                                 {% if asset.is_antivirus_expired %}
-                                     <br><span class="badge bg-danger">Expired</span>
-                                 {% elif asset.antivirus_license_date %}
-                                      <br><small class="text-muted">Lic: {{ asset.antivirus_license_date }}</small>
+    <!-- ICT Assets Tab -->
+    <div class="tab-pane fade show active" id="ict" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                     <thead class="bg-light">
+                         <tr>
+                             <th class="ps-4">Asset</th>
+                             <th>Specs</th>
+                             <th>Location</th>
+                             <th>Status</th>
+                             <th>User</th>
+                             <th>Inspection</th>
+                             <th class="text-end pe-4">Actions</th>
+                         </tr>
+                     </thead>
+                     <tbody>
+                         {% for asset in assets %}
+                         {% if asset.category == 'ICT' or not asset.category %}
+                         <tr>
+                             <td class="ps-4">
+                                 <div class="fw-bold text-dark">{{ asset.name }}</div>
+                                 <div class="small text-muted">{{ asset.serial_number }}</div>
+                                 <span class="badge bg-light text-dark border">{{ asset.type }}</span>
+                             </td>
+                             <td>
+                                 <div class="small">
+                                     {% if asset.os_name %}<i class="bi bi-windows me-1"></i>{{ asset.os_name }}{% endif %}
+                                 </div>
+                                 {% if asset.eol_date %}
+                                     {% if asset.is_eol_passed %}
+                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:0.65rem">Past EOL</span>
+                                     {% elif asset.is_eol_approaching %}
+                                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:0.65rem">EOL Soon</span>
+                                     {% endif %}
                                  {% endif %}
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                         <td>
-                             {% if asset.office_name %}
-                                 {{ asset.office_name }}
-                                 {% if asset.is_office_expired %}
-                                     <br><span class="badge bg-danger">Expired</span>
-                                 {% elif asset.office_license_date %}
-                                     <br><small class="text-muted">Lic: {{ asset.office_license_date }}</small>
+                             </td>
+                             <td>
+                                 {% if asset.province %}
+                                     <div class="small fw-semibold">{{ asset.province }}</div>
+                                     <div class="small text-muted">{{ asset.district or '' }}</div>
+                                 {% else %}
+                                     <span class="text-muted">-</span>
                                  {% endif %}
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                         <td>
-                             {% if asset.province or asset.district %}
-                                 <small>
-                                 {{ asset.province or '' }}<br>
-                                 {{ asset.district or '' }}
-                                 </small>
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                        <td>
-                            {% if asset.eol_date %}
-                                 <small>EOL: {{ asset.eol_date }}</small><br>
-                                 {% if asset.is_eol_passed %}
-                                     <span class="badge bg-danger">Past EOL</span>
-                                 {% elif asset.is_eol_approaching %}
-                                     <span class="badge bg-warning text-dark">Approaching EOL</span>
+                             </td>
+                            <td>
+                                <span class="badge rounded-pill bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
+                                    {{ asset.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if asset.assigned_to %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light rounded-circle p-1 me-2 text-center" style="width:24px;height:24px;font-size:0.7rem">
+                                            {{ asset.assigned_to[0]|upper }}
+                                        </div>
+                                        <span class="small">{{ asset.assigned_to }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                             <td>
+                                 {% if asset.inspected_by_ict %}
+                                     <i class="bi bi-check-circle-fill text-success"></i>
+                                     <span class="small text-muted ms-1">{{ asset.inspection_date }}</span>
+                                 {% else %}
+                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Pending</span>
                                  {% endif %}
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
-                                {{ asset.status }}
-                            </span>
-                        </td>
-                        <td>{{ asset.assigned_to }}</td>
-                         <td>
-                             {% if asset.inspected_by_ict %}
-                                 <span class="badge bg-success">Inspected</span>
-                                 {% if asset.inspection_date %}<br><small class="text-muted">{{ asset.inspection_date }}</small>{% endif %}
-                             {% else %}
-                                 <span class="badge bg-secondary">Not inspected</span>
-                             {% endif %}
-                         </td>
-                        <td>
-                            <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                            <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-info">View</a>
-                            {% if current_role!='AdminDistrict' %}
-                            <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;">
-                               <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Archive this asset?')">Archive</button>
-                            </form>
-                            {% endif %}
-                        </td>
-                     </tr>
-                     {% endif %}
-                     {% endfor %}
-                 </tbody>
-             </table>
-         </div>
-     </div>
-
-    <!-- Peripherals Tab -->
-    <div class="tab-pane fade" id="peripherals" role="tabpanel" aria-labelledby="peripherals-tab">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                 <thead>
-                     <tr>
-                         <th>ID</th>
-                         <th>Name</th>
-                         <th>Type</th>
-                         <th>Location</th>
-                         <th>Lifecycle</th>
-                         <th>Status</th>
-                         <th>Assigned To</th>
-                         <th>Inspection</th>
-                         <th>Actions</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                     {% for asset in assets %}
-                     {% if asset.type not in ['Laptop', 'Desktop', 'All-in-One'] %}
-                     <tr>
-                         <td>{{ asset.id }}</td>
-                         <td>{{ asset.name }}</td>
-                         <td>{{ asset.type }}</td>
-                         <td>
-                             {% if asset.province or asset.district %}
-                                 <small>
-                                 {{ asset.province or '' }}<br>
-                                 {{ asset.district or '' }}
-                                 </small>
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                         <td>
-                             {% if asset.type in ['Cellphone', 'Tablet'] and asset.eol_date %}
-                                 <small>EOL: {{ asset.eol_date }}</small><br>
-                                 {% if asset.is_eol_passed %}
-                                     <span class="badge bg-danger">Past EOL</span>
-                                 {% elif asset.is_eol_approaching %}
-                                     <span class="badge bg-warning text-dark">Approaching EOL</span>
-                                 {% endif %}
-                             {% else %}
-                                 -
-                             {% endif %}
-                         </td>
-                         <td>
-                             <span class="badge bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
-                                 {{ asset.status }}
-                             </span>
-                         </td>
-                         <td>{{ asset.assigned_to }}</td>
-                         <td>
-                             {% if asset.inspected_by_ict %}
-                                 <span class="badge bg-success">Inspected</span>
-                                 {% if asset.inspection_date %}<br><small class="text-muted">{{ asset.inspection_date }}</small>{% endif %}
-                             {% else %}
-                                 <span class="badge bg-secondary">Not inspected</span>
-                             {% endif %}
-                         </td>
-                        <td>
-                            <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                            <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-info">View</a>
-                            {% if current_role!='AdminDistrict' %}
-                            <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;">
-                               <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Archive this asset?')">Archive</button>
-                            </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
+                             </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    {% if current_role!='AdminDistrict' %}
+                                    <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this asset?')">
+                                       <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-archive"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                         </tr>
+                         {% endif %}
+                         {% endfor %}
+                     </tbody>
+                 </table>
+            </div>
         </div>
     </div>
 
-    <!-- Archived & Auctioned Tab -->
-    <div class="tab-pane fade" id="archived" role="tabpanel" aria-labelledby="archived-tab">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Location</th>
-                        <th>Assigned To</th>
-                        <th>Inspection</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asset in archived_auctioned_assets or [] %}
-                    <tr>
-                        <td>{{ asset.id }}</td>
-                        <td>{{ asset.name }}</td>
-                        <td>{{ asset.type }}</td>
-                        <td>
-                            <span class="badge bg-danger">{{ asset.status }}</span>
-                        </td>
-                        <td>
-                            {% if asset.province or asset.district %}
-                                <small>
-                                {{ asset.province or '' }}<br>
-                                {{ asset.district or '' }}
-                                </small>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ asset.assigned_to or '-' }}</td>
-                        <td>
-                            {% if asset.inspected_by_ict %}
-                                <span class="badge bg-success">Inspected</span>
-                                {% if asset.inspection_date %}<br><small class="text-muted">{{ asset.inspection_date }}</small>{% endif %}
-                            {% else %}
-                                <span class="badge bg-secondary">Not inspected</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-info">View</a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center">No archived or auctioned assets</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Furniture & General Tab -->
+    <div class="tab-pane fade" id="general" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                     <thead class="bg-light">
+                         <tr>
+                             <th class="ps-4">Asset</th>
+                             <th>Type</th>
+                             <th>Location</th>
+                             <th>Status</th>
+                             <th>User</th>
+                             <th class="text-end pe-4">Actions</th>
+                         </tr>
+                     </thead>
+                     <tbody>
+                         {% for asset in assets %}
+                         {% if asset.category != 'ICT' and asset.category %}
+                         <tr>
+                             <td class="ps-4">
+                                 <div class="fw-bold text-dark">{{ asset.name }}</div>
+                                 <div class="small text-muted">{{ asset.serial_number }}</div>
+                             </td>
+                             <td><span class="badge bg-light text-dark border">{{ asset.type }}</span></td>
+                             <td>
+                                 {% if asset.province %}
+                                     <div class="small fw-semibold">{{ asset.province }}</div>
+                                     <div class="small text-muted">{{ asset.district or '' }}</div>
+                                 {% else %}
+                                     <span class="text-muted">-</span>
+                                 {% endif %}
+                             </td>
+                             <td>
+                                 <span class="badge rounded-pill bg-{{ 'success' if asset.status == 'In Use' else 'secondary' if asset.status == 'In Stock' else 'danger' }}">
+                                     {{ asset.status }}
+                                 </span>
+                             </td>
+                             <td>{{ asset.assigned_to or '-' }}</td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    {% if current_role!='AdminDistrict' %}
+                                    <form action="{{ url_for('delete_asset', id=asset.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Archive this asset?')">
+                                       <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-archive"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archived Tab -->
+    <div class="tab-pane fade" id="archived" role="tabpanel">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Location</th>
+                            <th>Last User</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in archived_auctioned_assets or [] %}
+                        <tr>
+                            <td class="ps-4 text-muted">#{{ asset.id }}</td>
+                            <td>
+                                <div class="fw-bold">{{ asset.name }}</div>
+                            </td>
+                            <td>{{ asset.type }}</td>
+                            <td><small class="text-muted">{{ asset.category or 'ICT' }}</small></td>
+                            <td>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ asset.status }}</span>
+                            </td>
+                            <td>{{ asset.province or '-' }}</td>
+                            <td>{{ asset.assigned_to or '-' }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('view_asset', id=asset.id) }}" class="btn btn-sm btn-outline-info">View History</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">No archived or auctioned assets found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

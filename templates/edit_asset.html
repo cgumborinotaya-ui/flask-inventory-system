@@ -1,271 +1,459 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Edit Asset</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 fw-bold">Edit Asset: {{ asset.name }}</h3>
+</div>
+
 <form method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Asset Name</label>
-        <p class="form-control-plaintext">{{ asset.name }}</p>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Type</label>
-        <p class="form-control-plaintext">{{ asset.type }}</p>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Serial Number</label>
-        <p class="form-control-plaintext">{{ asset.serial_number }}</p>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Purchase Date</label>
-        <p class="form-control-plaintext">{{ asset.purchase_date or '-' }}</p>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Acquisition Type</label>
-        <p class="form-control-plaintext">{{ asset.acquisition_type or '-' }}</p>
-    </div>
-    <div class="mb-3">
-        <label for="assigned_to" class="form-label">Assigned To</label>
-        <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Supplier</label>
-        <p class="form-control-plaintext">{{ asset.supplier or '-' }}</p>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Donor Name</label>
-        <p class="form-control-plaintext">{{ asset.donor_name or '-' }}</p>
-    </div>
-    <div class="mb-3">
-        <label for="status" class="form-label">Status</label>
-        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidenceEdit()">
-            <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>
-            <option value="In Use" {% if asset.status == 'In Use' %}selected{% endif %}>In Use</option>
-            <option value="Broken" {% if asset.status == 'Broken' %}selected{% endif %}>Broken</option>
-            <option value="Lost / Stolen" {% if asset.status in ['Lost', 'Lost / Stolen'] %}selected{% endif %}>Lost / Stolen</option>
-            <option value="Auctioned" {% if asset.status == 'Auctioned' %}selected{% endif %}>Auctioned</option>
-            <option value="Archived" {% if asset.status == 'Archived' %}selected{% endif %}>Archived</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label for="repair_note" class="form-label">Repair Notes</label>
-        <textarea class="form-control" id="repair_note" name="repair_note" rows="2"></textarea>
-    </div>
-    <div class="mb-3">
-        <label for="recovery_note" class="form-label">Recovery Notes</label>
-        <textarea class="form-control" id="recovery_note" name="recovery_note" rows="2"></textarea>
-    </div>
-    <div class="mb-3" id="loss-evidence-section" style="display:{% if asset.status in ['Lost', 'Lost / Stolen'] %}block{% else %}none{% endif %};">
-        <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
-        <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
-        {% if existing_loss_doc %}
-        <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_loss_doc.id) }}" class="btn btn-link btn-sm">View existing document</a>
-        {% endif %}
-    </div>
-    <div id="health-section">
-        <hr>
-        <h4>Health & Software Details</h4>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-            <label for="os_name" class="form-label">Operating System (OS)</label>
-            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select OS</option>
-                <option value="Windows 7" {% if asset.os_name == 'Windows 7' %}selected{% endif %}>Windows 7</option>
-                <option value="Windows 8" {% if asset.os_name == 'Windows 8' %}selected{% endif %}>Windows 8</option>
-                <option value="Windows 8.1" {% if asset.os_name == 'Windows 8.1' %}selected{% endif %}>Windows 8.1</option>
-                <option value="Windows 10" {% if asset.os_name == 'Windows 10' %}selected{% endif %}>Windows 10</option>
-                <option value="Windows 11" {% if asset.os_name == 'Windows 11' %}selected{% endif %}>Windows 11</option>
-                <option value="Linux" {% if asset.os_name == 'Linux' %}selected{% endif %}>Linux</option>
-                <option value="macOS" {% if asset.os_name == 'macOS' %}selected{% endif %}>macOS</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="antivirus_name" class="form-label">Antivirus Name</label>
-            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select Antivirus</option>
-                <option value="ESET NOD32" {% if asset.antivirus_name == 'ESET NOD32' %}selected{% endif %}>ESET NOD32</option>
-                <option value="Kaspersky" {% if asset.antivirus_name == 'Kaspersky' %}selected{% endif %}>Kaspersky</option>
-                <option value="Avast" {% if asset.antivirus_name == 'Avast' %}selected{% endif %}>Avast</option>
-                <option value="AVG" {% if asset.antivirus_name == 'AVG' %}selected{% endif %}>AVG</option>
-                <option value="McAfee" {% if asset.antivirus_name == 'McAfee' %}selected{% endif %}>McAfee</option>
-                <option value="Norton" {% if asset.antivirus_name == 'Norton' %}selected{% endif %}>Norton</option>
-                <option value="Windows Defender" {% if asset.antivirus_name == 'Windows Defender' %}selected{% endif %}>Windows Defender</option>
-                <option value="Bitdefender" {% if asset.antivirus_name == 'Bitdefender' %}selected{% endif %}>Bitdefender</option>
-                <option value="Sophos" {% if asset.antivirus_name == 'Sophos' %}selected{% endif %}>Sophos</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
-            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" value="{{ asset.antivirus_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="office_name" class="form-label">Office Application</label>
-            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select Office Version</option>
-                <option value="Office 2007" {% if asset.office_name == 'Office 2007' %}selected{% endif %}>Office 2007</option>
-                <option value="Office 2010" {% if asset.office_name == 'Office 2010' %}selected{% endif %}>Office 2010</option>
-                <option value="Office 2013" {% if asset.office_name == 'Office 2013' %}selected{% endif %}>Office 2013</option>
-                <option value="Office 2016" {% if asset.office_name == 'Office 2016' %}selected{% endif %}>Office 2016</option>
-                <option value="Office 2019" {% if asset.office_name == 'Office 2019' %}selected{% endif %}>Office 2019</option>
-                <option value="Office 2021" {% if asset.office_name == 'Office 2021' %}selected{% endif %}>Office 2021</option>
-                <option value="Microsoft 365" {% if asset.office_name == 'Microsoft 365' %}selected{% endif %}>Microsoft 365</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="office_license_date" class="form-label">Office License Date</label>
-            <input type="date" class="form-control" id="office_license_date" name="office_license_date" value="{{ asset.office_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
-        </div>
-    </div>
-    </div>
+    <div class="row g-4">
+        <!-- Basic Information Card -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>Basic Information
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Asset Name</label>
+                            <p class="form-control-plaintext fw-bold">{{ asset.name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <p class="form-control-plaintext fw-bold">{{ asset.category or 'ICT' }}</p>
+                            <input type="hidden" id="category" value="{{ asset.category or 'ICT' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Type</label>
+                            <p class="form-control-plaintext">{{ asset.type }}</p>
+                            <input type="hidden" id="type" value="{{ asset.type }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Serial Number</label>
+                            <p class="form-control-plaintext">{{ asset.serial_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Purchase Date</label>
+                            <p class="form-control-plaintext">{{ asset.purchase_date or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <hr>
-    <h4>Location Details</h4>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="province" class="form-label">Province</label>
-            <select class="form-select" id="province" name="province" onchange="updateDistricts()" {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
-                <option value="">Select Province</option>
-                {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
-                <option value="Head Office" {% if asset.province == 'Head Office' %}selected{% endif %}>Head Office</option>
-                <option value="Bulawayo" {% if asset.province == 'Bulawayo' %}selected{% endif %}>Bulawayo</option>
-                <option value="Harare" {% if asset.province == 'Harare' %}selected{% endif %}>Harare</option>
-                <option value="Manicaland" {% if asset.province == 'Manicaland' %}selected{% endif %}>Manicaland</option>
-                <option value="Mashonaland Central" {% if asset.province == 'Mashonaland Central' %}selected{% endif %}>Mashonaland Central</option>
-                <option value="Mashonaland East" {% if asset.province == 'Mashonaland East' %}selected{% endif %}>Mashonaland East</option>
-                <option value="Mashonaland West" {% if asset.province == 'Mashonaland West' %}selected{% endif %}>Mashonaland West</option>
-                <option value="Masvingo" {% if asset.province == 'Masvingo' %}selected{% endif %}>Masvingo</option>
-                <option value="Matabeleland North" {% if asset.province == 'Matabeleland North' %}selected{% endif %}>Matabeleland North</option>
-                <option value="Matabeleland South" {% if asset.province == 'Matabeleland South' %}selected{% endif %}>Matabeleland South</option>
-                <option value="Midlands" {% if asset.province == 'Midlands' %}selected{% endif %}>Midlands</option>
-                {% else %}
-                <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
-                {% endif %}
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="district" class="form-label">District</label>
-            <select class="form-select" id="district" name="district" data-selected="{{ asset.district }}" {% if current_role == 'AdminDistrict' and current_user and current_user.district %}disabled{% endif %}>
-                {% if asset.district %}
-                <option value="{{ asset.district }}" selected>{{ asset.district }}</option>
-                {% else %}
-                <option value="">Select District</option>
-                {% endif %}
-            </select>
-        </div>
-    </div>
+            <!-- Acquisition Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-cart me-2 text-primary"></i>Acquisition & Origin
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Acquisition Type</label>
+                            <p class="form-control-plaintext fw-bold">{{ asset.acquisition_type or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Supplier</label>
+                            <p class="form-control-plaintext">{{ asset.supplier or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Donor Name</label>
+                            <p class="form-control-plaintext">{{ asset.donor_name or '-' }}</p>
+                        </div>
+                        <div class="col-12" id="specification-section">
+                            <label class="form-label">Procurement Specification Document</label>
+                            {% if existing_spec_doc %}
+                            <div class="mt-1">
+                                <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_spec_doc.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download me-1"></i>View Existing Document
+                                </a>
+                            </div>
+                            {% else %}
+                            <p class="form-control-plaintext text-muted fst-italic">No document attached.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <hr>
-    <h4>Inspection</h4>
-    <div class="row">
-        <div class="col-md-6 mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if asset.inspected_by_ict %}checked{% endif %} {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
-            <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
+            <!-- Health & Software Card (Conditional) -->
+            <div class="card mb-4" id="health-section" style="display:none;">
+                <div class="card-header">
+                    <i class="bi bi-cpu me-2 text-primary"></i>Health & Software Details
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="os_name" class="form-label">Operating System (OS)</label>
+                            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select OS</option>
+                                <option value="Windows 7" {% if asset.os_name == 'Windows 7' %}selected{% endif %}>Windows 7</option>
+                                <option value="Windows 8" {% if asset.os_name == 'Windows 8' %}selected{% endif %}>Windows 8</option>
+                                <option value="Windows 8.1" {% if asset.os_name == 'Windows 8.1' %}selected{% endif %}>Windows 8.1</option>
+                                <option value="Windows 10" {% if asset.os_name == 'Windows 10' %}selected{% endif %}>Windows 10</option>
+                                <option value="Windows 11" {% if asset.os_name == 'Windows 11' %}selected{% endif %}>Windows 11</option>
+                                <option value="Linux" {% if asset.os_name == 'Linux' %}selected{% endif %}>Linux</option>
+                                <option value="macOS" {% if asset.os_name == 'macOS' %}selected{% endif %}>macOS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6"></div> <!-- Spacer -->
+                        
+                        <div class="col-md-6">
+                            <label for="antivirus_name" class="form-label">Antivirus Name</label>
+                            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select Antivirus</option>
+                                <option value="ESET NOD32" {% if asset.antivirus_name == 'ESET NOD32' %}selected{% endif %}>ESET NOD32</option>
+                                <option value="Kaspersky" {% if asset.antivirus_name == 'Kaspersky' %}selected{% endif %}>Kaspersky</option>
+                                <option value="Avast" {% if asset.antivirus_name == 'Avast' %}selected{% endif %}>Avast</option>
+                                <option value="AVG" {% if asset.antivirus_name == 'AVG' %}selected{% endif %}>AVG</option>
+                                <option value="McAfee" {% if asset.antivirus_name == 'McAfee' %}selected{% endif %}>McAfee</option>
+                                <option value="Norton" {% if asset.antivirus_name == 'Norton' %}selected{% endif %}>Norton</option>
+                                <option value="Windows Defender" {% if asset.antivirus_name == 'Windows Defender' %}selected{% endif %}>Windows Defender</option>
+                                <option value="Bitdefender" {% if asset.antivirus_name == 'Bitdefender' %}selected{% endif %}>Bitdefender</option>
+                                <option value="Sophos" {% if asset.antivirus_name == 'Sophos' %}selected{% endif %}>Sophos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
+                            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" value="{{ asset.antivirus_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="office_name" class="form-label">Office Application</label>
+                            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select Office Version</option>
+                                <option value="Office 2007" {% if asset.office_name == 'Office 2007' %}selected{% endif %}>Office 2007</option>
+                                <option value="Office 2010" {% if asset.office_name == 'Office 2010' %}selected{% endif %}>Office 2010</option>
+                                <option value="Office 2013" {% if asset.office_name == 'Office 2013' %}selected{% endif %}>Office 2013</option>
+                                <option value="Office 2016" {% if asset.office_name == 'Office 2016' %}selected{% endif %}>Office 2016</option>
+                                <option value="Office 2019" {% if asset.office_name == 'Office 2019' %}selected{% endif %}>Office 2019</option>
+                                <option value="Office 2021" {% if asset.office_name == 'Office 2021' %}selected{% endif %}>Office 2021</option>
+                                <option value="Microsoft 365" {% if asset.office_name == 'Microsoft 365' %}selected{% endif %}>Microsoft 365</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="office_license_date" class="form-label">Office License Date</label>
+                            <input type="date" class="form-control" id="office_license_date" name="office_license_date" value="{{ asset.office_license_date }}" {% if current_role != 'IT' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <label for="inspection_date" class="form-label">Inspection Date</label>
-            <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
-        </div>
-    </div>
-    {% if current_role == 'IT' %}
-    <div class="mb-3">
-        <label for="inspection_document" class="form-label">Inspection Document</label>
-        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
-    </div>
-    {% endif %}
 
-    <script>
-        function toggleHealthSection() {
-            const type = document.getElementById("type").value;
-            const healthSection = document.getElementById("health-section");
-            const computerTypes = ["Laptop", "Desktop", "All-in-One"];
-            
-            if (computerTypes.includes(type)) {
-                healthSection.style.display = "block";
-            } else {
-                healthSection.style.display = "none";
-            }
+        <!-- Sidebar / Secondary Info -->
+        <div class="col-lg-4">
+            <!-- Status & Location Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-geo-alt me-2 text-primary"></i>Status & Location
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assigned To</label>
+                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" value="{{ asset.assigned_to or '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidenceEdit()">
+                            <option value="In Stock" {% if asset.status == 'In Stock' %}selected{% endif %}>In Stock</option>
+                            <option value="In Use" {% if asset.status == 'In Use' %}selected{% endif %}>In Use</option>
+                            <option value="Broken" {% if asset.status == 'Broken' %}selected{% endif %}>Broken</option>
+                            <option value="Lost / Stolen" {% if asset.status in ['Lost', 'Lost / Stolen'] %}selected{% endif %}>Lost / Stolen</option>
+                            <option value="Auctioned" {% if asset.status == 'Auctioned' %}selected{% endif %}>Auctioned</option>
+                            <option value="Archived" {% if asset.status == 'Archived' %}selected{% endif %}>Archived</option>
+                        </select>
+                    </div>
+
+                    <!-- Repair Notes Section -->
+                    <div class="mb-3 bg-light p-3 rounded border" id="repair-note-section" style="display:none;">
+                        <label for="repair_note" class="form-label fw-bold text-warning">
+                            <i class="bi bi-tools me-1"></i>Repair Notes
+                        </label>
+                        <textarea class="form-control" id="repair_note" name="repair_note" rows="2" placeholder="Describe damage or repair needed..."></textarea>
+                    </div>
+
+                    <!-- Recovery Notes Section -->
+                    <div class="mb-3 bg-light p-3 rounded border" id="recovery-note-section" style="display:none;">
+                        <label for="recovery_note" class="form-label fw-bold text-success">
+                            <i class="bi bi-check-circle me-1"></i>Recovery Notes
+                        </label>
+                        <textarea class="form-control" id="recovery_note" name="recovery_note" rows="2" placeholder="Details about recovery..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3" id="loss-evidence-section" style="display:{% if asset.status in ['Lost', 'Lost / Stolen'] %}block{% else %}none{% endif %};">
+                        <label for="loss_evidence" class="form-label text-danger">Police Report / Evidence</label>
+                        <input type="file" class="form-control border-danger" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
+                        {% if existing_loss_doc %}
+                        <div class="mt-2">
+                            <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_loss_doc.id) }}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>View Existing Document
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="province" class="form-label">Province</label>
+                        <select class="form-select" id="province" name="province" onchange="updateDistricts()" {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
+                            <option value="">Select Province</option>
+                            {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
+                            <option value="Head Office" {% if asset.province == 'Head Office' %}selected{% endif %}>Head Office</option>
+                            <option value="Bulawayo" {% if asset.province == 'Bulawayo' %}selected{% endif %}>Bulawayo</option>
+                            <option value="Harare" {% if asset.province == 'Harare' %}selected{% endif %}>Harare</option>
+                            <option value="Manicaland" {% if asset.province == 'Manicaland' %}selected{% endif %}>Manicaland</option>
+                            <option value="Mashonaland Central" {% if asset.province == 'Mashonaland Central' %}selected{% endif %}>Mashonaland Central</option>
+                            <option value="Mashonaland East" {% if asset.province == 'Mashonaland East' %}selected{% endif %}>Mashonaland East</option>
+                            <option value="Mashonaland West" {% if asset.province == 'Mashonaland West' %}selected{% endif %}>Mashonaland West</option>
+                            <option value="Masvingo" {% if asset.province == 'Masvingo' %}selected{% endif %}>Masvingo</option>
+                            <option value="Matabeleland North" {% if asset.province == 'Matabeleland North' %}selected{% endif %}>Matabeleland North</option>
+                            <option value="Matabeleland South" {% if asset.province == 'Matabeleland South' %}selected{% endif %}>Matabeleland South</option>
+                            <option value="Midlands" {% if asset.province == 'Midlands' %}selected{% endif %}>Midlands</option>
+                            {% else %}
+                            <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="district" class="form-label">District</label>
+                        <select class="form-select" id="district" name="district" data-selected="{{ asset.district }}" {% if current_role == 'AdminDistrict' and current_user and current_user.district %}disabled{% endif %}>
+                            {% if asset.district %}
+                            <option value="{{ asset.district }}" selected>{{ asset.district }}</option>
+                            {% else %}
+                            <option value="">Select District</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Card -->
+            <div class="card mb-4" id="inspection-card">
+                <div class="card-header">
+                    <i class="bi bi-clipboard-check me-2 text-primary"></i>Inspection
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="inspected_by_ict" name="inspected_by_ict" {% if asset.inspected_by_ict %}checked{% endif %} {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
+                        <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="inspection_date" class="form-label">Inspection Date</label>
+                        <input type="date" class="form-control" id="inspection_date" name="inspection_date" value="{{ asset.inspection_date }}" {% if current_role != 'IT' or asset.inspected_by_ict or asset.inspection_date %}disabled{% endif %}>
+                    </div>
+                    
+                    {% if current_role == 'IT' %}
+                    <div class="mb-3">
+                        <label for="inspection_document" class="form-label">Inspection Document</label>
+                        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comments Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-chat-left-text me-2 text-primary"></i>Notes & Comments
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Comment History</label>
+                        <div class="border rounded bg-light p-2 mb-3" style="max-height: 200px; overflow-y: auto;">
+                            {% if asset.comments %}
+                            <ul class="list-unstyled mb-0">
+                              {% for c in asset.comments %}
+                              <li class="mb-2 pb-2 border-bottom last-no-border">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                  <span class="fw-bold text-dark" style="font-size: 0.85rem;">{{ c.user.username if c.user else 'System' }}</span>
+                                  <small class="text-muted" style="font-size: 0.75rem;">{{ c.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <p class="mb-0 text-secondary" style="font-size: 0.9rem;">{{ c.content }}</p>
+                              </li>
+                              {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="mb-0 text-muted small text-center py-2">No comments yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <label for="general_comments" class="form-label">Add New Comment</label>
+                    <textarea class="form-control" id="general_comments" name="general_comments" rows="3" placeholder="Enter new comment here..."></textarea>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="button" id="submitBtn" class="btn btn-primary btn-lg" onclick="handleFormSubmit()">
+                    <i class="bi bi-save me-2"></i>Update Asset
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Archive Confirmation Modal -->
+<div class="modal fade" id="archiveWarningModal" tabindex="-1" aria-labelledby="archiveWarningModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="archiveWarningModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Warning: Irreversible Action</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fw-bold">Are you sure you want to Archive this asset?</p>
+        <p class="text-danger">This action is irreversible. Once archived, the asset cannot be edited or reactivated.</p>
+        <p>Please confirm you want to proceed.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="confirmArchive()">Yes, Archive Asset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+    function toggleHealthSection() {
+        const category = document.getElementById("category").value;
+        const type = document.getElementById("type").value;
+        const healthSection = document.getElementById("health-section");
+        const computerTypes = ["Laptop", "Desktop", "All-in-One"];
+        
+        if (category === 'ICT' && computerTypes.includes(type)) {
+            healthSection.style.display = "block";
+        } else {
+            healthSection.style.display = "none";
+        }
+    }
+
+    function toggleInspectionSection() {
+        const category = document.getElementById("category").value;
+        const inspectionCard = document.getElementById("inspection-card");
+        if (category === 'ICT') {
+            inspectionCard.style.display = "block";
+        } else {
+            inspectionCard.style.display = "none";
+        }
+    }
+
+    function toggleLossEvidenceEdit() {
+        const status = document.getElementById("status").value;
+        const lossSection = document.getElementById("loss-evidence-section");
+        const lossInput = document.getElementById("loss_evidence");
+        const repairSection = document.getElementById("repair-note-section");
+        const recoverySection = document.getElementById("recovery-note-section");
+        const hasExistingLoss = {{ 'true' if existing_loss_doc else 'false' }};
+        const currentStatus = "{{ asset.status }}";
+        
+        // Lost/Stolen Logic
+        if (status === "Lost / Stolen") {
+            lossSection.style.display = "block";
+            lossInput.required = !hasExistingLoss;
+        } else {
+            lossSection.style.display = "none";
+            lossInput.required = false;
+            lossInput.value = "";
         }
 
-        function toggleLossEvidenceEdit() {
-            const status = document.getElementById("status").value;
-            const section = document.getElementById("loss-evidence-section");
-            const input = document.getElementById("loss_evidence");
-            const hasExistingLoss = {{ 'true' if existing_loss_doc else 'false' }};
-            if (status === "Lost / Stolen") {
-                section.style.display = "block";
-                input.required = !hasExistingLoss;
-            } else {
-                section.style.display = "none";
-                input.required = false;
-                input.value = "";
-            }
+        // Repair Notes Logic: Show if currently Broken or changing to Broken
+        if (status === "Broken" || currentStatus === "Broken") {
+            repairSection.style.display = "block";
+        } else {
+            repairSection.style.display = "none";
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            toggleLossEvidenceEdit();
-        });
+        // Recovery Notes Logic: Show if currently Lost/Stolen or changing to Lost/Stolen
+        if (status === "Lost / Stolen" || currentStatus === "Lost / Stolen") {
+            recoverySection.style.display = "block";
+        } else {
+            recoverySection.style.display = "none";
+        }
+    }
 
-        const districtsByProvince = {
-            "Head Office": [],
-            "Bulawayo": ["Bulawayo District"],
-            "Harare": ["Harare District"],
-            "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
-            "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
-            "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
-            "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
-            "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
-            "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
-            "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
-            "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
-        };
+    const districtsByProvince = {
+        "Head Office": [],
+        "Bulawayo": ["Bulawayo District"],
+        "Harare": ["Harare District"],
+        "Manicaland": ["Buhera", "Chimanimani", "Chipinge", "Makoni", "Mutare", "Mutasa", "Nyanga"],
+        "Mashonaland Central": ["Bindura", "Guruve", "Mazowe", "Mbire", "Mount Darwin", "Rushinga", "Shamva"],
+        "Mashonaland East": ["Chikomba", "Goromonzi", "Marondera", "Murehwa", "Mutoko", "Seke", "Uzumba-Maramba-Pfungwe", "Wedza"],
+        "Mashonaland West": ["Chegutu", "Hurungwe", "Kadoma", "Kariba", "Makonde", "Mhondoro-Ngezi", "Sanyati", "Zvimba"],
+        "Masvingo": ["Bikita", "Chiredzi", "Chivi", "Gutu", "Masvingo", "Mwenezi", "Zaka"],
+        "Matabeleland North": ["Binga", "Hwange", "Lupane", "Nkayi", "Tsholotsho", "Umguza"],
+        "Matabeleland South": ["Beitbridge", "Gwanda", "Insiza", "Matobo", "Mangwe", "Umzingwane"],
+        "Midlands": ["Chirumhanzu", "Gokwe North", "Gokwe South", "Kwekwe", "Mberengwa", "Shurugwi", "Zvishavane", "Gweru"]
+    };
 
-        function updateDistricts() {
-            const provinceSelect = document.getElementById("province");
-            const districtSelect = document.getElementById("district");
-            let selectedProvince = provinceSelect.value;
-            if (!selectedProvince) {
-                selectedProvince = "{{ current_user.province if current_user else '' }}";
-                provinceSelect.value = selectedProvince;
-            }
-            const currentDistrict = districtSelect.dataset.selected;
-            
-            // Clear existing options
-            districtSelect.innerHTML = '<option value="">Select District</option>';
-            
-            if (selectedProvince === 'Head Office') {
-                districtSelect.disabled = true;
-                districtSelect.required = false;
-                return;
-            }
-            districtSelect.disabled = false;
-            districtSelect.required = true;
-            if (selectedProvince && districtsByProvince[selectedProvince]) {
-                districtsByProvince[selectedProvince].forEach(district => {
-                    const option = document.createElement("option");
-                    option.value = district;
-                    option.textContent = district;
-                    if (district === currentDistrict) {
-                        option.selected = true;
-                    }
-                    districtSelect.appendChild(option);
-                });
-            }
+    function updateDistricts() {
+        const provinceSelect = document.getElementById("province");
+        const districtSelect = document.getElementById("district");
+        let selectedProvince = provinceSelect.value;
+        
+        if (!selectedProvince) {
+            selectedProvince = "{{ asset.province or (current_user.province if current_user else '') }}";
+            provinceSelect.value = selectedProvince;
         }
         
-        // Initialize districts and health section on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            const provinceSelect = document.getElementById("province");
-            const defaultProvince = "{{ asset.province or (current_user.province if current_user else '') }}";
-            if (defaultProvince) {
-                provinceSelect.value = defaultProvince;
-            }
-            updateDistricts();
-            toggleHealthSection();
-            toggleLossEvidenceEdit();
-            document.getElementById("status").addEventListener("change", toggleLossEvidenceEdit);
-        });
-    </script>
+        const currentDistrict = districtSelect.dataset.selected;
+        
+        // Clear existing options
+        districtSelect.innerHTML = '<option value="">Select District</option>';
+        
+        if (selectedProvince === 'Head Office') {
+            districtSelect.disabled = true;
+            districtSelect.required = false;
+            return;
+        }
+        
+        districtSelect.disabled = false;
+        districtSelect.required = true;
+        
+        if (selectedProvince && districtsByProvince[selectedProvince]) {
+            districtsByProvince[selectedProvince].forEach(district => {
+                const option = document.createElement("option");
+                option.value = district;
+                option.textContent = district;
+                if (district === currentDistrict) {
+                    option.selected = true;
+                }
+                districtSelect.appendChild(option);
+            });
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const provinceSelect = document.getElementById("province");
+        const defaultProvince = "{{ asset.province or (current_user.province if current_user else '') }}";
+        if (defaultProvince && !provinceSelect.value) {
+            provinceSelect.value = defaultProvince;
+        }
+        updateDistricts();
+        toggleHealthSection();
+        toggleInspectionSection();
+        toggleLossEvidenceEdit();
+        
+        // Add event listeners
+        document.getElementById("status").addEventListener("change", toggleLossEvidenceEdit);
+    });
 
-    <button type="submit" class="btn btn-primary">Update Asset</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-</form>
+    function handleFormSubmit() {
+        const status = document.getElementById("status").value;
+        if (status === 'Archived') {
+            const modal = new bootstrap.Modal(document.getElementById('archiveWarningModal'));
+            modal.show();
+        } else {
+            document.querySelector('form').submit();
+        }
+    }
+
+    function confirmArchive() {
+        document.querySelector('form').submit();
+    }
+</script>
 {% endblock %}

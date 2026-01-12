@@ -48,6 +48,8 @@ class Asset(db.Model):
     acquisition_type = db.Column(db.String(20), nullable=True)
     donor_name = db.Column(db.String(120), nullable=True)
     capture_date = db.Column(db.Date, nullable=True)
+    general_comments = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(50), default='ICT', nullable=False)
     
     # New fields
     antivirus_name = db.Column(db.String(100), nullable=True)
@@ -190,6 +192,16 @@ class AuditLog(db.Model):
     entity_id = db.Column(db.Integer, nullable=True)
     details = db.Column(db.Text, nullable=True)
 
+class AssetComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    asset_id = db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship('User', backref='comments')
+    asset = db.relationship('Asset', backref=db.backref('comments', lazy=True, order_by='desc(AssetComment.timestamp)'))
+
 class AssetActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     asset_id = db.Column(db.Integer, nullable=False, index=True)
@@ -285,6 +297,7 @@ def index():
         'total': len(assets),
         'computers': sum(1 for a in assets if a.type in ['Laptop', 'Desktop', 'All-in-One']),
         'mobile': sum(1 for a in assets if a.type in ['Cellphone', 'Tablet']),
+        'furniture': sum(1 for a in assets if a.category == 'Furniture'),
         'in_use': sum(1 for a in assets if a.status == 'In Use'),
         'uninspected': sum(1 for a in assets if not a.inspected_by_ict),
     }
@@ -316,6 +329,7 @@ def add_asset():
         return redirect(url_for('index'))
     if request.method == 'POST':
         name = (request.form['name'] or '').strip()
+        category = (request.form.get('category') or 'ICT').strip()
         type = (request.form['type'] or '').strip()
         serial_number = (request.form['serial_number'] or '').strip()
         purchase_date_str = (request.form['purchase_date'] or '').strip()
@@ -324,6 +338,7 @@ def add_asset():
         assigned_to = (request.form.get('assigned_to') or '').strip()
         supplier = (request.form.get('supplier') or '').strip()
         status = (request.form['status'] or '').strip()
+        general_comments = (request.form.get('general_comments') or '').strip()
         if status == 'Lost':
             status = 'Lost / Stolen'
         
@@ -413,6 +428,7 @@ def add_asset():
                 inspection_date = None
             new_asset = Asset(
                 name=name,
+                category=category,
                 type=type,
                 serial_number=serial_number,
                 purchase_date=purchase_date,
@@ -422,6 +438,7 @@ def add_asset():
                 acquisition_type=acquisition_type,
                 donor_name=(donor_name or None),
                 capture_date=datetime.utcnow().date(),
+                general_comments=(general_comments or None),
                 antivirus_name=antivirus_name,
                 antivirus_license_date=antivirus_license_date,
                 office_name=office_name,
@@ -435,6 +452,16 @@ def add_asset():
             )
             db.session.add(new_asset)
             db.session.commit()
+            
+            # Initial comment if any
+            if general_comments and general_comments.strip():
+                init_comment = AssetComment(
+                    asset_id=new_asset.id,
+                    user_id=current_user().id if current_user() else None,
+                    content=general_comments.strip()
+                )
+                db.session.add(init_comment)
+                db.session.commit()
 
             uploads_dir = Path(app.config['UPLOAD_FOLDER'])
             uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -546,6 +573,7 @@ def edit_asset(id):
         posted_antivirus_license_date_str = (request.form.get('antivirus_license_date') or '').strip()
         posted_office = (request.form.get('office_name') or '').strip() or None
         posted_office_license_date_str = (request.form.get('office_license_date') or '').strip()
+        posted_general_comments = (request.form.get('general_comments') or '').strip() or None
 
         posted_inspected = request.form.get('inspected_by_ict') == 'on'
         posted_inspection_date_str = (request.form.get('inspection_date') or '').strip()
@@ -573,6 +601,8 @@ def edit_asset(id):
 
         immutable_attempted = False
         if (request.form.get('name') or '').strip() and (request.form.get('name') or '').strip() != (asset.name or ''):
+            immutable_attempted = True
+        if (request.form.get('category') or '').strip() and (request.form.get('category') or '').strip() != (asset.category or 'ICT'):
             immutable_attempted = True
         if (request.form.get('serial_number') or '').strip() and (request.form.get('serial_number') or '').strip() != (asset.serial_number or ''):
             immutable_attempted = True
@@ -618,6 +648,16 @@ def edit_asset(id):
                 asset.antivirus_license_date = posted_antivirus_license_date
             asset.office_name = posted_office
             asset.office_license_date = posted_office_license_date
+            # asset.general_comments is not updated directly here to preserve history
+            
+            # New comment if any
+            if posted_general_comments:
+                new_comment = AssetComment(
+                    asset_id=asset.id,
+                    user_id=current_user().id if current_user() else None,
+                    content=posted_general_comments
+                )
+                db.session.add(new_comment)
 
             uploads_dir = Path(app.config['UPLOAD_FOLDER'])
             uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -770,6 +810,61 @@ def delete_asset(id):
         flash(f'Error archiving asset: {e}', 'danger')
     return redirect(url_for('index'))
 
+@app.route('/auction/<int:id>', methods=['POST'])
+@login_required
+def auction_asset(id):
+    if not is_it():
+        flash('Access denied', 'danger')
+        return redirect(url_for('index'))
+    
+    asset = Asset.query.get_or_404(id)
+    q = filter_by_user_location(Asset.query.filter(Asset.id == id))
+    if not q.first():
+        flash('Access denied for this asset', 'danger')
+        return redirect(url_for('index'))
+    
+    if asset.status != 'Archived':
+        flash('Only archived assets can be auctioned', 'danger')
+        return redirect(url_for('view_asset', id=id))
+
+    comment = (request.form.get('auction_comment') or '').strip()
+    if not comment:
+        flash('Comment is required for auctioning', 'danger')
+        return redirect(url_for('view_asset', id=id))
+
+    try:
+        old_status = asset.status
+        asset.status = 'Auctioned'
+        
+        # Log status change
+        activity = AssetActivity(
+            asset_id=asset.id,
+            actor_user_id=current_user().id if current_user() else None,
+            action='auction',
+            field='status',
+            old_value=old_status,
+            new_value='Auctioned'
+        )
+        db.session.add(activity)
+        
+        # Add comment
+        new_comment = AssetComment(
+            asset_id=asset.id,
+            user_id=current_user().id if current_user() else None,
+            content=f"Auctioned: {comment}"
+        )
+        db.session.add(new_comment)
+        
+        db.session.commit()
+        log_action('auction_asset', 'Asset', id, asset.name)
+        flash('Asset auctioned successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        log_action('auction_asset_error', 'Asset', id, str(e))
+        flash(f'Error auctioning asset: {e}', 'danger')
+        
+    return redirect(url_for('view_asset', id=id))
+
 @app.route('/assets/<int:asset_id>/documents/<int:doc_id>/download', methods=['GET'])
 @login_required
 def download_asset_document(asset_id, doc_id):
@@ -829,6 +924,8 @@ def get_report_assets(report_type):
         q = q.filter(Asset.acquisition_type == 'Donated')
     elif report_type == 'purchased':
         q = q.filter(Asset.acquisition_type == 'Purchased')
+    elif report_type == 'furniture_general':
+        q = q.filter(Asset.category != 'ICT')
 
     # Optional filters via query params
     name = request.args.get('assigned_to') or ''
@@ -874,32 +971,46 @@ def get_report_assets(report_type):
         assets = [a for a in assets if a.is_eol_passed]
     return assets
 
-def asset_rows(assets):
+def asset_rows(assets, report_type='all'):
     rows = []
     for a in assets:
-        rows.append({
-            'ID': a.id,
-            'Name': a.name,
-            'Type': a.type,
-            'Serial': a.serial_number,
-            'Purchase Date': a.purchase_date.isoformat() if a.purchase_date else '',
-            'Acquisition Type': a.acquisition_type or '',
-            'Status': a.status,
-            'Assigned To': a.assigned_to or '',
-            'Supplier': a.supplier or '',
-            'Donor Name': a.donor_name or '',
-            'Province': a.province or '',
-            'District': a.district or '',
-            'OS': a.os_name or '',
-            'Antivirus': a.antivirus_name or '',
-            'Antivirus License': a.antivirus_license_date.isoformat() if a.antivirus_license_date else '',
-            'Office': a.office_name or '',
-            'Office License': a.office_license_date.isoformat() if a.office_license_date else '',
-            'EOL Date': a.eol_date.isoformat() if a.eol_date else '',
-            'EOL Status': a.eol_status or '',
-            'Inspected': 'Yes' if a.inspected_by_ict else 'No',
-            'Inspection Date': a.inspection_date.isoformat() if a.inspection_date else '',
-        })
+        if report_type == 'furniture_general':
+            rows.append({
+                'ID': a.id,
+                'Name': a.name,
+                'Category': a.category,
+                'Type': a.type,
+                'Serial': a.serial_number,
+                'Purchase Date': a.purchase_date.isoformat() if a.purchase_date else '',
+                'Status': a.status,
+                'Assigned To': a.assigned_to or '',
+                'Location': f"{a.province or ''} / {a.district or ''}",
+                'Comments': a.general_comments or ''
+            })
+        else:
+            rows.append({
+                'ID': a.id,
+                'Name': a.name,
+                'Type': a.type,
+                'Serial': a.serial_number,
+                'Purchase Date': a.purchase_date.isoformat() if a.purchase_date else '',
+                'Acquisition Type': a.acquisition_type or '',
+                'Status': a.status,
+                'Assigned To': a.assigned_to or '',
+                'Supplier': a.supplier or '',
+                'Donor Name': a.donor_name or '',
+                'Province': a.province or '',
+                'District': a.district or '',
+                'OS': a.os_name or '',
+                'Antivirus': a.antivirus_name or '',
+                'Antivirus License': a.antivirus_license_date.isoformat() if a.antivirus_license_date else '',
+                'Office': a.office_name or '',
+                'Office License': a.office_license_date.isoformat() if a.office_license_date else '',
+                'EOL Date': a.eol_date.isoformat() if a.eol_date else '',
+                'EOL Status': a.eol_status or '',
+                'Inspected': 'Yes' if a.inspected_by_ict else 'No',
+                'Inspection Date': a.inspection_date.isoformat() if a.inspection_date else '',
+            })
     return rows
 
 @app.route('/reports')
@@ -1121,14 +1232,21 @@ def export(fmt):
         filename_base = f"movement_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     else:
         assets = get_report_assets(report_type)
-        rows = asset_rows(assets)
+        rows = asset_rows(assets, report_type)
         filename_base = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     if fmt == 'csv' or fmt == 'excel':
         si = io.StringIO()
-        writer = csv.DictWriter(si, fieldnames=list(rows[0].keys()) if rows else [
-            'ID','Name','Type','Serial','Purchase Date','Status','Assigned To','Supplier','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date'
-        ])
+        fieldnames = []
+        if rows:
+            fieldnames = list(rows[0].keys())
+        else:
+            if report_type == 'furniture_general':
+                fieldnames = ['ID','Name','Category','Type','Serial','Purchase Date','Status','Assigned To','Location','Comments']
+            else:
+                fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date']
+        
+        writer = csv.DictWriter(si, fieldnames=fieldnames)
         writer.writeheader()
         for r in rows:
             writer.writerow(r)
@@ -1320,6 +1438,14 @@ def ensure_schema():
         if 'capture_date' not in cols:
             db.session.execute(text("ALTER TABLE asset ADD COLUMN capture_date DATE"))
             db.session.commit()
+        if 'general_comments' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN general_comments TEXT"))
+            db.session.commit()
+        if 'category' not in cols:
+            db.session.execute(text("ALTER TABLE asset ADD COLUMN category VARCHAR(50) DEFAULT 'ICT'"))
+            db.session.commit()
+        # Ensure AssetComment table exists by re-running create_all, usually it's safe
+        db.create_all()
 
 ensure_schema()
 

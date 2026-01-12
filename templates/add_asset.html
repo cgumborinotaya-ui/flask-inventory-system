@@ -1,190 +1,297 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Add New Asset</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 fw-bold">Add New Asset</h3>
+</div>
+
 <form method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label for="name" class="form-label">Asset Name</label>
-        <input type="text" class="form-control" id="name" name="name" required>
-    </div>
-    <div class="mb-3">
-        <label for="type" class="form-label">Type</label>
-        <select class="form-select" id="type" name="type" required onchange="toggleHealthSection()">
-            <option value="">Select Type</option>
-            <option value="Laptop">Laptop</option>
-            <option value="Desktop">Desktop</option>
-            <option value="All-in-One">All-in-One</option>
-            <option value="Tablet">Tablet</option>
-            <option value="Cellphone">Cellphone</option>
-            <option value="Monitor">Monitor</option>
-            <option value="Printer">Printer</option>
-            <option value="Projector">Projector</option>
-            <option value="Scanner">Scanner</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label for="serial_number" class="form-label">Serial Number</label>
-        <input type="text" class="form-control" id="serial_number" name="serial_number" required>
-    </div>
-    <div class="mb-3">
-        <label for="purchase_date" class="form-label">Purchase Date</label>
-        <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
-    </div>
-    <div class="mb-3">
-        <label for="acquisition_type" class="form-label">Acquisition Type</label>
-        <select class="form-select" id="acquisition_type" name="acquisition_type" required onchange="toggleAcquisitionFields()">
-            <option value="">Select Acquisition Type</option>
-            <option value="Purchased">Purchased</option>
-            <option value="Donated">Donated</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label for="supplier" class="form-label">Supplier</label>
-        <input type="text" class="form-control" id="supplier" name="supplier">
-    </div>
-    <div class="mb-3">
-        <label for="donor_name" class="form-label">Donor Name</label>
-        <input type="text" class="form-control" id="donor_name" name="donor_name">
-    </div>
-    <div class="mb-3">
-        <label for="status" class="form-label">Status</label>
-        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidence()">
-            <option value="In Stock">In Stock</option>
-            <option value="In Use">In Use</option>
-            <option value="Broken">Broken</option>
-            <option value="Lost / Stolen">Lost / Stolen</option>
-        </select>
-    </div>
-    <div class="mb-3" id="loss-evidence-section" style="display:none;">
-        <label for="loss_evidence" class="form-label">Police Report / Evidence Document</label>
-        <input type="file" class="form-control" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
-    </div>
-    <div class="mb-3" id="specification-section">
-        <label for="specification_document" class="form-label">Procurement Specification Document</label>
-        <input type="file" class="form-control" id="specification_document" name="specification_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
-    </div>
+    <div class="row g-4">
+        <!-- Basic Information Card -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>Basic Information
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Asset Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required placeholder="e.g. Dell Latitude 5420 or Executive Desk">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required onchange="updateTypeOptions()">
+                                <option value="ICT">ICT Asset</option>
+                                <option value="Furniture">Furniture & General</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="type" name="type" required onchange="toggleHealthSection()">
+                                <option value="">Select Type</option>
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="serial_number" class="form-label" id="serial-label">Serial Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="serial_number" name="serial_number" required placeholder="e.g. ABC123XYZ or Asset Tag #">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="purchase_date" class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <div id="health-section">
-        <hr>
-        <h4>Health & Software Details</h4>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-            <label for="os_name" class="form-label">Operating System (OS)</label>
-            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select OS</option>
-                <option value="Windows 7">Windows 7</option>
-                <option value="Windows 8">Windows 8</option>
-                <option value="Windows 8.1">Windows 8.1</option>
-                <option value="Windows 10">Windows 10</option>
-                <option value="Windows 11">Windows 11</option>
-                <option value="Linux">Linux</option>
-                <option value="macOS">macOS</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="antivirus_name" class="form-label">Antivirus Name</label>
-            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select Antivirus</option>
-                <option value="ESET NOD32">ESET NOD32</option>
-                <option value="Kaspersky">Kaspersky</option>
-                <option value="Avast">Avast</option>
-                <option value="AVG">AVG</option>
-                <option value="McAfee">McAfee</option>
-                <option value="Norton">Norton</option>
-                <option value="Windows Defender">Windows Defender</option>
-                <option value="Bitdefender">Bitdefender</option>
-                <option value="Sophos">Sophos</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
-            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="office_name" class="form-label">Office Application</label>
-            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
-                <option value="">Select Office Version</option>
-                <option value="Office 2007">Office 2007</option>
-                <option value="Office 2010">Office 2010</option>
-                <option value="Office 2013">Office 2013</option>
-                <option value="Office 2016">Office 2016</option>
-                <option value="Office 2019">Office 2019</option>
-                <option value="Office 2021">Office 2021</option>
-                <option value="Microsoft 365">Microsoft 365</option>
-            </select>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="office_license_date" class="form-label">Office License Date</label>
-            <input type="date" class="form-control" id="office_license_date" name="office_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
-        </div>
-    </div>
-    </div>
+            <!-- Acquisition Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-cart me-2 text-primary"></i>Acquisition & Origin
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="acquisition_type" class="form-label">Acquisition Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="acquisition_type" name="acquisition_type" required onchange="toggleAcquisitionFields()">
+                                <option value="">Select Type</option>
+                                <option value="Purchased">Purchased</option>
+                                <option value="Donated">Donated</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="supplier" class="form-label">Supplier</label>
+                            <input type="text" class="form-control" id="supplier" name="supplier" placeholder="Required if Purchased">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="donor_name" class="form-label">Donor Name</label>
+                            <input type="text" class="form-control" id="donor_name" name="donor_name" placeholder="Required if Donated">
+                        </div>
+                        <div class="col-12" id="specification-section">
+                            <label for="specification_document" class="form-label">Procurement Specification Document</label>
+                            <input type="file" class="form-control" id="specification_document" name="specification_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+                            <div class="form-text text-muted">Required for purchased assets.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <hr>
-    <h4>Location Details</h4>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="province" class="form-label">Province</label>
-            <select class="form-select" id="province" name="province" onchange="updateDistricts()" required {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
-                <option value="">Select Province</option>
-                {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
-                <option value="Head Office">Head Office</option>
-                <option value="Bulawayo">Bulawayo</option>
-                <option value="Harare">Harare</option>
-                <option value="Manicaland">Manicaland</option>
-                <option value="Mashonaland Central">Mashonaland Central</option>
-                <option value="Mashonaland East">Mashonaland East</option>
-                <option value="Mashonaland West">Mashonaland West</option>
-                <option value="Masvingo">Masvingo</option>
-                <option value="Matabeleland North">Matabeleland North</option>
-                <option value="Matabeleland South">Matabeleland South</option>
-                <option value="Midlands">Midlands</option>
-                {% else %}
-                <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
-                {% endif %}
-            </select>
+            <!-- Health & Software Card (Conditional) -->
+            <div class="card mb-4" id="health-section" style="display:none;">
+                <div class="card-header">
+                    <i class="bi bi-cpu me-2 text-primary"></i>Health & Software Details
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="os_name" class="form-label">Operating System (OS)</label>
+                            <select class="form-select" id="os_name" name="os_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select OS</option>
+                                <option value="Windows 7">Windows 7</option>
+                                <option value="Windows 8">Windows 8</option>
+                                <option value="Windows 8.1">Windows 8.1</option>
+                                <option value="Windows 10">Windows 10</option>
+                                <option value="Windows 11">Windows 11</option>
+                                <option value="Linux">Linux</option>
+                                <option value="macOS">macOS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6"></div> <!-- Spacer -->
+                        
+                        <div class="col-md-6">
+                            <label for="antivirus_name" class="form-label">Antivirus Name</label>
+                            <select class="form-select" id="antivirus_name" name="antivirus_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select Antivirus</option>
+                                <option value="ESET NOD32">ESET NOD32</option>
+                                <option value="Kaspersky">Kaspersky</option>
+                                <option value="Avast">Avast</option>
+                                <option value="AVG">AVG</option>
+                                <option value="McAfee">McAfee</option>
+                                <option value="Norton">Norton</option>
+                                <option value="Windows Defender">Windows Defender</option>
+                                <option value="Bitdefender">Bitdefender</option>
+                                <option value="Sophos">Sophos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="antivirus_license_date" class="form-label">Antivirus License Date</label>
+                            <input type="date" class="form-control" id="antivirus_license_date" name="antivirus_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="office_name" class="form-label">Office Application</label>
+                            <select class="form-select" id="office_name" name="office_name" {% if current_role != 'IT' %}disabled{% endif %}>
+                                <option value="">Select Office Version</option>
+                                <option value="Office 2007">Office 2007</option>
+                                <option value="Office 2010">Office 2010</option>
+                                <option value="Office 2013">Office 2013</option>
+                                <option value="Office 2016">Office 2016</option>
+                                <option value="Office 2019">Office 2019</option>
+                                <option value="Office 2021">Office 2021</option>
+                                <option value="Microsoft 365">Microsoft 365</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="office_license_date" class="form-label">Office License Date</label>
+                            <input type="date" class="form-control" id="office_license_date" name="office_license_date" {% if current_role != 'IT' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <label for="district" class="form-label">District</label>
-            <select class="form-select" id="district" name="district" {% if current_user and current_user.district %}disabled{% endif %}>
-                <option value="">Select District</option>
-                {% if current_user and current_user.district %}
-                <option value="{{ current_user.district }}" selected>{{ current_user.district }}</option>
-                {% endif %}
-            </select>
-        </div>
-    </div>
 
-    <hr>
-    <h4>Inspection</h4>
-    <div class="row">
-        <div class="col-md-6 mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="inspected_by_ict" name="inspected_by_ict" {% if current_role != 'IT' %}disabled{% endif %}>
-            <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label for="inspection_date" class="form-label">Inspection Date</label>
-            <input type="date" class="form-control" id="inspection_date" name="inspection_date" {% if current_role != 'IT' %}disabled{% endif %}>
-        </div>
-    </div>
-    {% if current_role == 'IT' %}
-    <div class="mb-3">
-        <label for="inspection_document" class="form-label">Inspection Document</label>
-        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
-    </div>
-    {% endif %}
+        <!-- Sidebar / Secondary Info -->
+        <div class="col-lg-4">
+            <!-- Status & Location Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-geo-alt me-2 text-primary"></i>Status & Location
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="status" name="status" required onchange="toggleLossEvidence()">
+                            <option value="In Stock">In Stock</option>
+                            <option value="In Use">In Use</option>
+                            <option value="Broken">Broken</option>
+                            <option value="Lost / Stolen">Lost / Stolen</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="loss-evidence-section" style="display:none;">
+                        <label for="loss_evidence" class="form-label text-danger">Police Report / Evidence <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control border-danger" id="loss_evidence" name="loss_evidence" accept=".pdf,.png,.jpg,.jpeg">
+                        <div class="form-text text-danger">Required for Lost/Stolen assets.</div>
+                    </div>
 
-    <script>
+                    <div class="mb-3">
+                        <label for="province" class="form-label">Province <span class="text-danger">*</span></label>
+                        <select class="form-select" id="province" name="province" onchange="updateDistricts()" required {% if current_role != 'IT' and current_user and current_user.province != 'Head Office' %}disabled{% endif %}>
+                            <option value="">Select Province</option>
+                            {% if current_role == 'IT' or (current_user and current_user.province == 'Head Office') %}
+                            <option value="Head Office">Head Office</option>
+                            <option value="Bulawayo">Bulawayo</option>
+                            <option value="Harare">Harare</option>
+                            <option value="Manicaland">Manicaland</option>
+                            <option value="Mashonaland Central">Mashonaland Central</option>
+                            <option value="Mashonaland East">Mashonaland East</option>
+                            <option value="Mashonaland West">Mashonaland West</option>
+                            <option value="Masvingo">Masvingo</option>
+                            <option value="Matabeleland North">Matabeleland North</option>
+                            <option value="Matabeleland South">Matabeleland South</option>
+                            <option value="Midlands">Midlands</option>
+                            {% else %}
+                            <option value="{{ current_user.province }}" selected>{{ current_user.province }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="district" class="form-label">District</label>
+                        <select class="form-select" id="district" name="district" {% if current_user and current_user.district %}disabled{% endif %}>
+                            <option value="">Select District</option>
+                            {% if current_user and current_user.district %}
+                            <option value="{{ current_user.district }}" selected>{{ current_user.district }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Card -->
+            <div class="card mb-4" id="inspection-card">
+                <div class="card-header">
+                    <i class="bi bi-clipboard-check me-2 text-primary"></i>Inspection
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="inspected_by_ict" name="inspected_by_ict" {% if current_role != 'IT' %}disabled{% endif %}>
+                        <label class="form-check-label" for="inspected_by_ict">Inspected by ICT personnel</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="inspection_date" class="form-label">Inspection Date</label>
+                        <input type="date" class="form-control" id="inspection_date" name="inspection_date" {% if current_role != 'IT' %}disabled{% endif %}>
+                    </div>
+                    
+                    {% if current_role == 'IT' %}
+                    <div class="mb-3">
+                        <label for="inspection_document" class="form-label">Inspection Document</label>
+                        <input type="file" class="form-control" id="inspection_document" name="inspection_document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comments Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-chat-left-text me-2 text-primary"></i>Notes
+                </div>
+                <div class="card-body">
+                    <label for="general_comments" class="form-label">Initial Comment (optional)</label>
+                    <textarea class="form-control" id="general_comments" name="general_comments" rows="4" placeholder="Add any initial remarks here..."></textarea>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save me-2"></i>Save Asset
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+        const assetTypes = {
+            "ICT": ["Laptop", "Desktop", "All-in-One", "Tablet", "Cellphone", "Monitor", "Printer", "Projector", "Scanner", "Network Equipment", "Server", "UPS", "Other ICT"],
+            "Furniture": ["Desk", "Chair", "Table", "Cabinet", "Bookshelf", "Couch", "Safe", "Fan", "Heater", "Air Conditioner", "Whiteboard", "Shredder", "Binder", "Laminator", "Guillotine", "Calculator", "Other General"]
+        };
+
+        function updateTypeOptions() {
+            const category = document.getElementById("category").value;
+            const typeSelect = document.getElementById("type");
+            const currentType = typeSelect.value;
+            
+            typeSelect.innerHTML = '<option value="">Select Type</option>';
+            
+            if (assetTypes[category]) {
+                assetTypes[category].forEach(type => {
+                    const option = document.createElement("option");
+                    option.value = type;
+                    option.textContent = type;
+                    typeSelect.appendChild(option);
+                });
+            }
+            
+            toggleHealthSection();
+            toggleInspectionSection();
+        }
+
         function toggleHealthSection() {
+            const category = document.getElementById("category").value;
             const type = document.getElementById("type").value;
             const healthSection = document.getElementById("health-section");
             const computerTypes = ["Laptop", "Desktop", "All-in-One"];
             
-            if (computerTypes.includes(type)) {
+            if (category === 'ICT' && computerTypes.includes(type)) {
                 healthSection.style.display = "block";
             } else {
                 healthSection.style.display = "none";
+            }
+        }
+
+        function toggleInspectionSection() {
+            const category = document.getElementById("category").value;
+            const inspectionCard = document.getElementById("inspection-card");
+            // Only show ICT inspection for ICT assets
+            if (category === 'ICT') {
+                inspectionCard.style.display = "block";
+            } else {
+                inspectionCard.style.display = "none";
             }
         }
 
@@ -214,12 +321,18 @@
                 supplier.required = true;
                 specInput.required = true;
                 donor.value = "";
+                donor.disabled = true;
+                supplier.disabled = false;
             } else if (acq === "Donated") {
                 donor.required = true;
                 supplier.value = "";
+                supplier.disabled = true;
+                donor.disabled = false;
             } else {
                 supplier.value = "";
                 donor.value = "";
+                supplier.disabled = false;
+                donor.disabled = false;
             }
         }
 
@@ -286,7 +399,7 @@
                 provinceSelect.value = defaultProvince;
             }
             updateDistricts();
-            toggleHealthSection();
+            updateTypeOptions(); // Initial load of types
             toggleLossEvidence();
             document.getElementById("status").addEventListener("change", toggleLossEvidence);
             toggleAcquisitionFields();
@@ -297,8 +410,4 @@
             toggleInspectionFields();
         });
     </script>
-
-    <button type="submit" class="btn btn-primary">Save Asset</button>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-</form>
 {% endblock %}
