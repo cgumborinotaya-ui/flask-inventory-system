@@ -26,6 +26,9 @@ app.config['LOGO_STATIC_PATH'] = '/static/zim_logo.png'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
 app.config['UPLOAD_FOLDER'] = str((Path(app.instance_path) / 'uploads').resolve())
 db = SQLAlchemy(app)
+with app.app_context():
+    db.create_all()
+
 
 PROVINCE_DISTRICTS = {
     'Head Office': [],
@@ -1434,7 +1437,7 @@ with app.app_context():
     db.create_all()
 
 
-def generate_reset_token(user_id):
+def generate_reset_token(user_id): 
     import secrets
     token = secrets.token_urlsafe(32)
     pr = PasswordResetToken(
