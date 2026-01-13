@@ -1684,3 +1684,17 @@ if __name__ == '__main__':
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
+
+from werkzeug.security import generate_password_hash
+from yourmodels import User   # adjust import if needed
+
+with app.app_context():
+    if not User.query.filter_by(username="admin").first():
+        admin = User(
+            username="admin",
+            password=generate_password_hash("admin123"),
+            role="admin"
+        )
+        db.session.add(admin)
+        db.session.commit()
