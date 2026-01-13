@@ -1430,32 +1430,9 @@ class PasswordResetToken(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
 
-def ensure_schema():
-    with app.app_context():
-        db.create_all()
-        cols = [r[1] for r in db.session.execute(text("PRAGMA table_info(asset)")).fetchall()]
-        if 'supplier' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN supplier VARCHAR(120)"))
-            db.session.commit()
-        if 'acquisition_type' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN acquisition_type VARCHAR(20)"))
-            db.session.commit()
-        if 'donor_name' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN donor_name VARCHAR(120)"))
-            db.session.commit()
-        if 'capture_date' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN capture_date DATE"))
-            db.session.commit()
-        if 'general_comments' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN general_comments TEXT"))
-            db.session.commit()
-        if 'category' not in cols:
-            db.session.execute(text("ALTER TABLE asset ADD COLUMN category VARCHAR(50) DEFAULT 'ICT'"))
-            db.session.commit()
-        # Ensure AssetComment table exists by re-running create_all, usually it's safe
-        db.create_all()
+with app.app_context():
+    db.create_all()
 
-ensure_schema()
 
 def generate_reset_token(user_id):
     import secrets
