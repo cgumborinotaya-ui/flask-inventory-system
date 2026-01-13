@@ -11,7 +11,15 @@ from sqlalchemy import desc
 from pathlib import Path
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
+import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 app.config['MINISTRY_NAME'] = 'Ministry of Women Affairs, Community, Small & Medium Enterprises Development'
 app.config['LOGO_STATIC_PATH'] = '/static/zim_logo.png'
