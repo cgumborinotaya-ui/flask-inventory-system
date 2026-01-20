@@ -29,6 +29,23 @@ db = SQLAlchemy(app)
 with app.app_context():
     db.create_all()
 
+with app.app_context():
+    it_exists = User.query.filter(User.role == 'IT').count() > 0
+    if not it_exists:
+        username = os.environ.get('ADMIN_IT_USERNAME') or 'admin'
+        password = os.environ.get('ADMIN_IT_PASSWORD') or 'admin123'
+        existing = User.query.filter_by(username=username).first()
+        if not existing:
+            u = User(
+                username=username,
+                password_hash=generate_password_hash(password),
+                role='IT',
+                province='Head Office',
+                district=None,
+                active=True,
+            )
+            db.session.add(u)
+            db.session.commit()
 
 PROVINCE_DISTRICTS = {
     'Head Office': [],
@@ -1685,15 +1702,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
 
-
-from werkzeug.security import generate_password_hash
-with app.app_context():
-    if not User.query.filter_by(username="admin").first():
-        admin = User(
-            username="admin",
-            password_hash=generate_password_hash("admin123"),
-
-            role="admin"
-        )
-        db.session.add(admin)
-        db.session.commit()
