@@ -9,16 +9,17 @@ from functools import wraps
 from sqlalchemy import text
 from sqlalchemy import desc
 from pathlib import Path
+import os
 
 app = Flask(__name__)
-import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+default_sqlite_path = (Path(app.instance_path) / 'inventory.db').resolve()
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or f"sqlite:///{default_sqlite_path.as_posix()}"
 
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 app.config['MINISTRY_NAME'] = 'Ministry of Women Affairs, Community, Small & Medium Enterprises Development'
@@ -26,26 +27,7 @@ app.config['LOGO_STATIC_PATH'] = '/static/zim_logo.png'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
 app.config['UPLOAD_FOLDER'] = str((Path(app.instance_path) / 'uploads').resolve())
 db = SQLAlchemy(app)
-with app.app_context():
-    db.create_all()
 
-with app.app_context():
-    it_exists = User.query.filter(User.role == 'IT').count() > 0
-    if not it_exists:
-        username = os.environ.get('ADMIN_IT_USERNAME') or 'admin'
-        password = os.environ.get('ADMIN_IT_PASSWORD') or 'admin123'
-        existing = User.query.filter_by(username=username).first()
-        if not existing:
-            u = User(
-                username=username,
-                password_hash=generate_password_hash(password),
-                role='IT',
-                province='Head Office',
-                district=None,
-                active=True,
-            )
-            db.session.add(u)
-            db.session.commit()
 
 PROVINCE_DISTRICTS = {
     'Head Office': [],
@@ -160,6 +142,29 @@ class User(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     email = db.Column(db.String(120), nullable=True)
     
+
+def bootstrap_it_admin():
+    it_exists = User.query.filter(User.role == 'IT').count() > 0
+    if it_exists:
+        return
+    username = (os.environ.get('ADMIN_IT_USERNAME') or 'admin').strip()
+    password = os.environ.get('ADMIN_IT_PASSWORD') or 'admin123'
+    if not username or not password:
+        return
+    existing = User.query.filter_by(username=username).first()
+    if existing:
+        return
+    u = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        role='IT',
+        province='Head Office',
+        district=None,
+        active=True,
+    )
+    db.session.add(u)
+    db.session.commit()
+
 
 def login_required(f):
     @wraps(f)
@@ -1452,6 +1457,7 @@ class PasswordResetToken(db.Model):
 
 with app.app_context():
     db.create_all()
+    bootstrap_it_admin()
 
 
 def generate_reset_token(user_id): 
@@ -1701,4 +1707,3 @@ if __name__ == '__main__':
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
