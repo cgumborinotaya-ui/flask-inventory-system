@@ -61,7 +61,7 @@
                             <p class="form-control-plaintext">{{ asset.donor_name or '-' }}</p>
                         </div>
                         <div class="col-12" id="specification-section">
-                            <label class="form-label">Procurement Specification Document</label>
+                            <label class="form-label">Delivery Note Document</label>
                             {% if existing_spec_doc %}
                             <div class="mt-1">
                                 <a href="{{ url_for('download_asset_document', asset_id=asset.id, doc_id=existing_spec_doc.id) }}" class="btn btn-sm btn-outline-primary">

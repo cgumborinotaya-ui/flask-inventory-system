@@ -18,6 +18,7 @@
       <option value="Admin" {% if user.role=='Admin' %}selected{% endif %}>Admin</option>
       <option value="AdminProvince" {% if user.role=='AdminProvince' %}selected{% endif %}>Admin (Province)</option>
       <option value="AdminDistrict" {% if user.role=='AdminDistrict' %}selected{% endif %}>Admin (District)</option>
+      <option value="Auditor" {% if user.role=='Auditor' %}selected{% endif %}>Auditor</option>
       <option value="Viewer" {% if user.role=='Viewer' %}selected{% endif %}>Viewer</option>
     </select>
   </div>
@@ -94,9 +95,12 @@
       const role = document.getElementById("role").value;
       const province = document.getElementById("province");
       const district = document.getElementById("district");
+      province.required = false;
+      district.required = false;
       province.disabled = false;
       district.disabled = false;
       if (role === 'AdminProvince') {
+          province.required = true;
           const selectedProvince = province.value;
           const all = districtsByProvince[selectedProvince] || [];
           district.innerHTML = '';
@@ -107,8 +111,17 @@
           district.appendChild(opt);
           district.disabled = true;
       } else if (role === 'AdminDistrict') {
+          province.required = true;
+          district.required = true;
           province.querySelector('option[value="Head Office"]').disabled = true;
           district.disabled = false;
+      } else if (role === 'Auditor') {
+          province.required = true;
+          district.required = false;
+          province.querySelector('option[value="Head Office"]').disabled = false;
+          if (province.value === 'Head Office') {
+              district.disabled = true;
+          }
       } else {
           province.querySelector('option[value="Head Office"]').disabled = false;
       }

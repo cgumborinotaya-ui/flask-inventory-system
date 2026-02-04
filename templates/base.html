@@ -184,11 +184,13 @@
           <i class="bi bi-bar-chart-fill"></i> Reports
         </a>
         
-        {% if current_role == 'IT' %}
+        {% if current_role in ['IT', 'Auditor'] %}
         <div class="nav-category">Administration</div>
+        {% if current_role == 'IT' %}
         <a class="nav-link {% if request.endpoint=='users' %}active{% endif %}" href="{{ url_for('users') }}">
           <i class="bi bi-people-fill"></i> Users
         </a>
+        {% endif %}
         <a class="nav-link {% if request.endpoint=='audit' %}active{% endif %}" href="{{ url_for('audit') }}">
           <i class="bi bi-shield-check"></i> Audit Logs
         </a>

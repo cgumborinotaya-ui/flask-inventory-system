@@ -336,7 +336,11 @@
                 <div class="d-flex align-items-center">
                   <i class="bi bi-file-earmark-pdf text-danger fs-4 me-3"></i>
                   <div>
-                    <h6 class="mb-0">{{ d.doc_type }}</h6>
+                    {% set doc_label = d.doc_type %}
+                    {% if d.doc_type == 'specification' %}{% set doc_label = 'Delivery Note Document' %}{% endif %}
+                    {% if d.doc_type == 'loss_evidence' %}{% set doc_label = 'Police Report / Evidence Document' %}{% endif %}
+                    {% if d.doc_type == 'inspection' %}{% set doc_label = 'Inspection Document' %}{% endif %}
+                    <h6 class="mb-0">{{ doc_label }}</h6>
                     <small class="text-muted">Uploaded on {{ d.timestamp.strftime('%Y-%m-%d') }} by {{ actor_map.get(d.actor_user_id, 'System') if d.actor_user_id else 'System' }}</small>
                   </div>
                 </div>

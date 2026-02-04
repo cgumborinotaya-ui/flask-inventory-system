@@ -184,6 +184,14 @@ def is_it():
     u = current_user()
     return bool(u and u.role == 'IT')
 
+def is_auditor():
+    u = current_user()
+    return bool(u and u.role == 'Auditor')
+
+def can_view_audit_logs():
+    u = current_user()
+    return bool(u and u.role in ['IT', 'Auditor'])
+
 def has_asset_edit_rights():
     u = current_user()
     if not u:
@@ -423,7 +431,7 @@ def add_asset():
             if not supplier:
                 errors.append('Supplier is required for purchased assets')
             if not specification_file or not specification_file.filename:
-                errors.append('Procurement specification document is required for purchased assets')
+                errors.append('Delivery note document is required for purchased assets')
         if acquisition_type == 'Donated':
             if not donor_name:
                 errors.append('Donor Name is required for donated assets')
@@ -1411,7 +1419,7 @@ def users():
         if len(password) < 8:
             flash('Password must be at least 8 characters', 'danger')
             return redirect(url_for('users'))
-        if not username or not password or role not in ['IT', 'Admin', 'AdminProvince', 'AdminDistrict', 'Viewer']:
+        if not username or not password or role not in ['IT', 'Admin', 'AdminProvince', 'AdminDistrict', 'Auditor', 'Viewer']:
             flash('Invalid user data', 'danger')
             return redirect(url_for('users'))
         # Enforce location requirements by role
@@ -1429,6 +1437,12 @@ def users():
             if not district:
                 flash('District is required for Admin (District) users', 'danger')
                 return redirect(url_for('users'))
+        if role == 'Auditor':
+            if not province:
+                flash('Province is required for Auditor users', 'danger')
+                return redirect(url_for('users'))
+            if province == 'Head Office':
+                district = ''
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
             return redirect(url_for('users'))
@@ -1544,7 +1558,7 @@ def reset_password(token):
 @app.route('/audit')
 @login_required
 def audit():
-    if not is_it():
+    if not can_view_audit_logs():
         flash('Access denied', 'danger')
         return redirect(url_for('index'))
     action = request.args.get('action') or ''
@@ -1561,18 +1575,19 @@ def audit():
     logs = q.all()
     backup_dir = Path("D:/ICTAssetBackups")
     backup_files = []
-    try:
-        if backup_dir.exists():
-            files = sorted(backup_dir.glob("inventory_backup_*.db"), key=lambda p: p.stat().st_mtime, reverse=True)
-            for f in files[:20]:
-                st = f.stat()
-                backup_files.append({
-                    'name': f.name,
-                    'size': st.st_size,
-                    'mtime': datetime.fromtimestamp(st.st_mtime)
-                })
-    except Exception:
-        backup_files = []
+    if is_it():
+        try:
+            if backup_dir.exists():
+                files = sorted(backup_dir.glob("inventory_backup_*.db"), key=lambda p: p.stat().st_mtime, reverse=True)
+                for f in files[:20]:
+                    st = f.stat()
+                    backup_files.append({
+                        'name': f.name,
+                        'size': st.st_size,
+                        'mtime': datetime.fromtimestamp(st.st_mtime)
+                    })
+        except Exception:
+            backup_files = []
     return render_template('audit.html', logs=logs, backup_files=backup_files, backup_dir=str(backup_dir))
 
 @app.route('/backup/download')
@@ -1608,7 +1623,7 @@ def edit_user(id):
         district = (request.form.get('district') or '').strip()
         password = (request.form.get('password') or '').strip()
         email = (request.form.get('email') or '').strip()
-        if not username or role not in ['IT', 'Admin', 'AdminProvince', 'AdminDistrict', 'Viewer']:
+        if not username or role not in ['IT', 'Admin', 'AdminProvince', 'AdminDistrict', 'Auditor', 'Viewer']:
             flash('Invalid user data', 'danger')
             return redirect(url_for('edit_user', id=id))
         existing = User.query.filter(User.username == username, User.id != id).first()
@@ -1635,6 +1650,12 @@ def edit_user(id):
                 return redirect(url_for('edit_user', id=id))
             user.province = province
             user.district = district
+        elif role == 'Auditor':
+            if not province:
+                flash('Province is required for Auditor users', 'danger')
+                return redirect(url_for('edit_user', id=id))
+            user.province = province
+            user.district = (district or None) if province != 'Head Office' else None
         else:
             user.province = province or None
             user.district = district or None

@@ -5,7 +5,9 @@
   <h2>Audit Logs</h2>
   <div class="d-flex gap-2">
     <a href="{{ url_for('reports') }}" class="btn btn-secondary">Reports</a>
+    {% if current_role == 'IT' %}
     <a href="{{ url_for('download_backup') }}" class="btn btn-outline-primary">Download Backup</a>
+    {% endif %}
   </div>
 </div>
 
@@ -50,6 +52,7 @@
   </table>
 </div>
 
+{% if current_role == 'IT' %}
 <h4 class="mt-4">Backups</h4>
 <p class="text-muted">Folder: {{ backup_dir }}</p>
 <div class="table-responsive">
@@ -76,4 +79,5 @@
     </tbody>
   </table>
 </div>
+{% endif %}
 {% endblock %}
