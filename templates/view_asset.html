@@ -399,6 +399,8 @@
           <div class="col-12">
             {% if asset.is_routine_service_due %}
               <span class="badge bg-danger">Due for service</span>
+            {% elif asset.is_routine_service_due_soon %}
+              <span class="badge bg-warning text-dark">Due soon (30 days)</span>
             {% else %}
               <span class="badge bg-success">Not due</span>
             {% endif %}

@@ -58,6 +58,7 @@ LOCKED_ASSET_STATUSES = ['Archived', 'Auctioned']
 
 ROUTINE_SERVICE_TYPES = ['Laptop', 'Desktop', 'All-in-One', 'Printer']
 ROUTINE_SERVICE_INTERVAL_MONTHS = 6
+ROUTINE_SERVICE_DUE_SOON_DAYS = 30
 
 
 def add_months(d, months):
@@ -117,6 +118,18 @@ class Asset(db.Model):
         if not due_date:
             return None
         return datetime.now().date() >= due_date
+
+    @property
+    def is_routine_service_due_soon(self):
+        if self.type not in ROUTINE_SERVICE_TYPES:
+            return None
+        due_date = self.routine_service_due_date
+        if not due_date:
+            return None
+        today = datetime.now().date()
+        if due_date <= today:
+            return False
+        return due_date <= (today + timedelta(days=ROUTINE_SERVICE_DUE_SOON_DAYS))
 
     @property
     def is_antivirus_expired(self):
@@ -290,7 +303,8 @@ def inject_user():
         'current_user': current_user(),
         'current_role': (current_user().role if current_user() else None),
         'ministry_name': app.config.get('MINISTRY_NAME'),
-        'logo_url': app.config.get('LOGO_STATIC_PATH')
+        'logo_url': app.config.get('LOGO_STATIC_PATH'),
+        'today': datetime.now().date(),
     }
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1039,12 +1053,14 @@ def get_report_assets(report_type):
     elif report_type == 'computers_health':
         q = q.filter(Asset.type.in_(['Laptop', 'Desktop', 'All-in-One']))
     elif report_type == 'routine_service_due':
-        due_cutoff = subtract_months(datetime.now().date(), ROUTINE_SERVICE_INTERVAL_MONTHS)
+        today = datetime.now().date()
+        due_cutoff = subtract_months(today, ROUTINE_SERVICE_INTERVAL_MONTHS)
+        due_soon_cutoff = subtract_months(today + timedelta(days=ROUTINE_SERVICE_DUE_SOON_DAYS), ROUTINE_SERVICE_INTERVAL_MONTHS)
         q = q.filter(~Asset.status.in_(LOCKED_ASSET_STATUSES))
         q = q.filter(Asset.type.in_(ROUTINE_SERVICE_TYPES))
         q = q.filter(
-            (Asset.last_service_date.is_(None) & (Asset.purchase_date.isnot(None)) & (Asset.purchase_date <= due_cutoff))
-            | (Asset.last_service_date.isnot(None) & (Asset.last_service_date <= due_cutoff))
+            (Asset.last_service_date.is_(None) & (Asset.purchase_date.isnot(None)) & (Asset.purchase_date <= due_soon_cutoff))
+            | (Asset.last_service_date.isnot(None) & (Asset.last_service_date <= due_soon_cutoff))
         )
     elif report_type == 'approaching_eol':
         # handle via post-filtering because computed property
@@ -1151,7 +1167,16 @@ def asset_rows(assets, report_type='all'):
             if report_type == 'routine_service_due':
                 row['Last Service Date'] = a.last_service_date.isoformat() if a.last_service_date else ''
                 row['Next Service Due'] = a.routine_service_due_date.isoformat() if a.routine_service_due_date else ''
-                row['Service Due'] = 'Yes' if a.is_routine_service_due else 'No'
+                if a.routine_service_due_date:
+                    row['Days To Due'] = (a.routine_service_due_date - datetime.now().date()).days
+                else:
+                    row['Days To Due'] = ''
+                if a.is_routine_service_due:
+                    row['Service Status'] = 'Due'
+                elif a.is_routine_service_due_soon:
+                    row['Service Status'] = f'Due Soon ({ROUTINE_SERVICE_DUE_SOON_DAYS} days)'
+                else:
+                    row['Service Status'] = 'OK'
             rows.append(row)
     return rows
 
@@ -1386,7 +1411,7 @@ def export(fmt):
             if report_type == 'furniture_general':
                 fieldnames = ['ID','Name','Category','Type','Serial','Purchase Date','Status','Assigned To','Location','Comments']
             elif report_type == 'routine_service_due':
-                fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date','Last Service Date','Next Service Due','Service Due']
+                fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date','Last Service Date','Next Service Due','Days To Due','Service Status']
             else:
                 fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date']
         
