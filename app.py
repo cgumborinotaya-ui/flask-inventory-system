@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, session, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy import desc
 from pathlib import Path
 import os
+import calendar
 
 app = Flask(__name__)
 
@@ -46,6 +47,22 @@ PROVINCE_DISTRICTS = {
 ALLOWED_ASSET_STATUSES = ['In Use', 'In Stock', 'Broken', 'Lost / Stolen', 'Auctioned', 'Archived']
 LOCKED_ASSET_STATUSES = ['Archived', 'Auctioned']
 
+ROUTINE_SERVICE_TYPES = ['Laptop', 'Desktop', 'All-in-One', 'Printer']
+ROUTINE_SERVICE_INTERVAL_MONTHS = 6
+
+
+def add_months(d, months):
+    if not d:
+        return None
+    year = d.year + ((d.month - 1 + months) // 12)
+    month = ((d.month - 1 + months) % 12) + 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def subtract_months(d, months):
+    return add_months(d, -months)
+
 class Asset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -72,6 +89,25 @@ class Asset(db.Model):
     inspected_by_ict = db.Column(db.Boolean, default=False)
     inspection_date = db.Column(db.Date, nullable=True)
     created_by_user_id = db.Column(db.Integer, nullable=True)
+    last_service_date = db.Column(db.Date, nullable=True)
+
+    @property
+    def routine_service_due_date(self):
+        if self.type not in ROUTINE_SERVICE_TYPES:
+            return None
+        base = self.last_service_date or self.purchase_date
+        if not base:
+            return None
+        return add_months(base, ROUTINE_SERVICE_INTERVAL_MONTHS)
+
+    @property
+    def is_routine_service_due(self):
+        if self.type not in ROUTINE_SERVICE_TYPES:
+            return None
+        due_date = self.routine_service_due_date
+        if not due_date:
+            return None
+        return datetime.now().date() >= due_date
 
     @property
     def is_antivirus_expired(self):
@@ -164,6 +200,27 @@ def bootstrap_it_admin():
     )
     db.session.add(u)
     db.session.commit()
+
+
+def ensure_asset_schema():
+    try:
+        engine_name = db.engine.name
+        if engine_name == 'sqlite':
+            cols = [r[1] for r in db.session.execute(text('PRAGMA table_info(asset)')).fetchall()]
+            if 'last_service_date' not in cols:
+                db.session.execute(text('ALTER TABLE asset ADD COLUMN last_service_date DATE'))
+                db.session.commit()
+        else:
+            exists = db.session.execute(
+                text(
+                    "SELECT 1 FROM information_schema.columns WHERE table_name='asset' AND column_name='last_service_date'"
+                )
+            ).first()
+            if not exists:
+                db.session.execute(text('ALTER TABLE asset ADD COLUMN last_service_date DATE'))
+                db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def login_required(f):
@@ -593,6 +650,9 @@ def edit_asset(id):
             if not (current_status == 'Archived' and posted_status == 'Auctioned'):
                 flash('Archived or Auctioned assets cannot be reactivated', 'danger')
                 return redirect(url_for('view_asset', id=asset.id))
+            if posted_service_date_str:
+                flash('Cannot record routine service for Archived or Auctioned assets', 'danger')
+                return redirect(url_for('view_asset', id=asset.id))
 
         attempted_relocate = False
         posted_province = (request.form.get('province') or '').strip()
@@ -615,6 +675,9 @@ def edit_asset(id):
         posted_office = (request.form.get('office_name') or '').strip() or None
         posted_office_license_date_str = (request.form.get('office_license_date') or '').strip()
         posted_general_comments = (request.form.get('general_comments') or '').strip() or None
+
+        posted_service_date_str = (request.form.get('routine_service_date') or '').strip()
+        posted_service_notes = (request.form.get('routine_service_notes') or '').strip() or None
 
         posted_inspected = request.form.get('inspected_by_ict') == 'on'
         posted_inspection_date_str = (request.form.get('inspection_date') or '').strip()
@@ -673,11 +736,13 @@ def edit_asset(id):
             'office_license_date': asset.office_license_date.isoformat() if asset.office_license_date else None,
             'inspected_by_ict': 'Yes' if asset.inspected_by_ict else 'No',
             'inspection_date': asset.inspection_date.isoformat() if asset.inspection_date else None,
+            'last_service_date': asset.last_service_date.isoformat() if asset.last_service_date else None,
         }
 
         try:
             posted_antivirus_license_date = datetime.strptime(posted_antivirus_license_date_str, '%Y-%m-%d').date() if posted_antivirus_license_date_str else None
             posted_office_license_date = datetime.strptime(posted_office_license_date_str, '%Y-%m-%d').date() if posted_office_license_date_str else None
+            posted_service_date = datetime.strptime(posted_service_date_str, '%Y-%m-%d').date() if posted_service_date_str else None
 
             asset.province = posted_province or None
             asset.district = posted_district or None
@@ -689,6 +754,17 @@ def edit_asset(id):
                 asset.antivirus_license_date = posted_antivirus_license_date
             asset.office_name = posted_office
             asset.office_license_date = posted_office_license_date
+
+            if posted_service_date and asset.type in ROUTINE_SERVICE_TYPES:
+                asset.last_service_date = posted_service_date
+                if posted_service_notes:
+                    db.session.add(
+                        AssetComment(
+                            asset_id=asset.id,
+                            user_id=current_user().id if current_user() else None,
+                            content=f"Routine Service ({posted_service_date.isoformat()}): {posted_service_notes}"
+                        )
+                    )
             # asset.general_comments is not updated directly here to preserve history
             
             # New comment if any
@@ -765,6 +841,7 @@ def edit_asset(id):
             add_change('software', 'office_license_date', old_values['office_license_date'] or '', asset.office_license_date.isoformat() if asset.office_license_date else '')
             add_change('inspection', 'inspected_by_ict', old_values['inspected_by_ict'] or '', 'Yes' if asset.inspected_by_ict else 'No')
             add_change('inspection', 'inspection_date', old_values['inspection_date'] or '', asset.inspection_date.isoformat() if asset.inspection_date else '')
+            add_change('routine_service', 'last_service_date', old_values['last_service_date'] or '', asset.last_service_date.isoformat() if asset.last_service_date else '')
             if current_status == 'Broken' and posted_status in ['In Stock', 'In Use'] and posted_status != current_status and repair_note:
                 changes.append(AssetActivity(
                     asset_id=asset.id,
@@ -950,6 +1027,14 @@ def get_report_assets(report_type):
         q = q.filter(~Asset.status.in_(LOCKED_ASSET_STATUSES))
     elif report_type == 'computers_health':
         q = q.filter(Asset.type.in_(['Laptop', 'Desktop', 'All-in-One']))
+    elif report_type == 'routine_service_due':
+        due_cutoff = subtract_months(datetime.now().date(), ROUTINE_SERVICE_INTERVAL_MONTHS)
+        q = q.filter(~Asset.status.in_(LOCKED_ASSET_STATUSES))
+        q = q.filter(Asset.type.in_(ROUTINE_SERVICE_TYPES))
+        q = q.filter(
+            (Asset.last_service_date.is_(None) & (Asset.purchase_date.isnot(None)) & (Asset.purchase_date <= due_cutoff))
+            | (Asset.last_service_date.isnot(None) & (Asset.last_service_date <= due_cutoff))
+        )
     elif report_type == 'approaching_eol':
         # handle via post-filtering because computed property
         pass
@@ -1029,7 +1114,7 @@ def asset_rows(assets, report_type='all'):
                 'Comments': a.general_comments or ''
             })
         else:
-            rows.append({
+            row = {
                 'ID': a.id,
                 'Name': a.name,
                 'Type': a.type,
@@ -1051,7 +1136,12 @@ def asset_rows(assets, report_type='all'):
                 'EOL Status': a.eol_status or '',
                 'Inspected': 'Yes' if a.inspected_by_ict else 'No',
                 'Inspection Date': a.inspection_date.isoformat() if a.inspection_date else '',
-            })
+            }
+            if report_type == 'routine_service_due':
+                row['Last Service Date'] = a.last_service_date.isoformat() if a.last_service_date else ''
+                row['Next Service Due'] = a.routine_service_due_date.isoformat() if a.routine_service_due_date else ''
+                row['Service Due'] = 'Yes' if a.is_routine_service_due else 'No'
+            rows.append(row)
     return rows
 
 @app.route('/reports')
@@ -1284,6 +1374,8 @@ def export(fmt):
         else:
             if report_type == 'furniture_general':
                 fieldnames = ['ID','Name','Category','Type','Serial','Purchase Date','Status','Assigned To','Location','Comments']
+            elif report_type == 'routine_service_due':
+                fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date','Last Service Date','Next Service Due','Service Due']
             else:
                 fieldnames = ['ID','Name','Type','Serial','Purchase Date','Acquisition Type','Status','Assigned To','Supplier','Donor Name','Province','District','OS','Antivirus','Antivirus License','Office','Office License','EOL Date','EOL Status','Inspected','Inspection Date']
         
@@ -1471,6 +1563,7 @@ class PasswordResetToken(db.Model):
 
 with app.app_context():
     db.create_all()
+    ensure_asset_schema()
     bootstrap_it_admin()
 
 

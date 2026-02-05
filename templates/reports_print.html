@@ -28,6 +28,11 @@
         <th>EOL Status</th>
         <th>Inspected</th>
         <th>Inspection Date</th>
+        {% if report_type == 'routine_service_due' %}
+        <th>Last Service Date</th>
+        <th>Next Service Due</th>
+        <th>Service Due</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -50,10 +55,15 @@
         <td>{{ a.eol_status or '-' }}</td>
         <td>{{ 'Yes' if a.inspected_by_ict else 'No' }}</td>
         <td>{{ a.inspection_date or '-' }}</td>
+        {% if report_type == 'routine_service_due' %}
+        <td>{{ a.last_service_date or '-' }}</td>
+        <td>{{ a.routine_service_due_date or '-' }}</td>
+        <td>{{ 'Yes' if a.is_routine_service_due else 'No' }}</td>
+        {% endif %}
       </tr>
       {% else %}
       <tr>
-        <td colspan="17" class="text-center">No data</td>
+        <td colspan="{% if report_type == 'routine_service_due' %}20{% else %}17{% endif %}" class="text-center">No data</td>
       </tr>
       {% endfor %}
     </tbody>

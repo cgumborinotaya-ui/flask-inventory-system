@@ -378,6 +378,36 @@
       </div>
     </div>
 
+    {% if asset.type in ['Laptop', 'Desktop', 'All-in-One', 'Printer'] %}
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="card-title fw-bold text-primary mb-0"><i class="bi bi-calendar2-check me-2"></i>Routine Maintenance</h5>
+        {% if current_role in ['IT','Admin','AdminProvince','AdminDistrict'] and asset.status not in ['Archived','Auctioned'] %}
+        <a href="{{ url_for('edit_asset', id=asset.id) }}" class="btn btn-sm btn-outline-primary">Update</a>
+        {% endif %}
+      </div>
+      <div class="card-body px-4 pb-4">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="text-muted small text-uppercase">Last Service</label>
+            <p class="fw-medium mb-0">{{ asset.last_service_date or '-' }}</p>
+          </div>
+          <div class="col-6">
+            <label class="text-muted small text-uppercase">Next Due</label>
+            <p class="fw-medium mb-0">{{ asset.routine_service_due_date or '-' }}</p>
+          </div>
+          <div class="col-12">
+            {% if asset.is_routine_service_due %}
+              <span class="badge bg-danger">Due for service</span>
+            {% else %}
+              <span class="badge bg-success">Not due</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Inspection Card -->
     {% if asset.category == 'ICT' or not asset.category %}
     <div class="card mb-4 border-0 shadow-sm">

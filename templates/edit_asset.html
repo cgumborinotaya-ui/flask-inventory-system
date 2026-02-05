@@ -228,6 +228,29 @@
                 </div>
             </div>
 
+            {% if asset.type in ['Laptop', 'Desktop', 'All-in-One', 'Printer'] %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-calendar2-check me-2 text-primary"></i>Routine Maintenance (Bi-Annual)
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Last Service Date</label>
+                        <p class="form-control-plaintext">{{ asset.last_service_date or '-' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="routine_service_date" class="form-label">Service Date</label>
+                        <input type="date" class="form-control" id="routine_service_date" name="routine_service_date" value="">
+                        <div class="form-text">Use this when routine servicing is completed.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="routine_service_notes" class="form-label">Service Notes (optional)</label>
+                        <textarea class="form-control" id="routine_service_notes" name="routine_service_notes" rows="2" placeholder="e.g., cleaned, updated drivers, replaced cartridge..."></textarea>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Inspection Card -->
             <div class="card mb-4" id="inspection-card">
                 <div class="card-header">

@@ -12,6 +12,7 @@
     <select id="report_type" name="type" class="form-select" onchange="this.form.submit()">
       <option value="all" {% if report_type=='all' %}selected{% endif %}>All Assets</option>
       <option value="computers_health" {% if report_type=='computers_health' %}selected{% endif %}>Computers Health</option>
+      <option value="routine_service_due" {% if report_type=='routine_service_due' %}selected{% endif %}>Routine Service Due (Computers & Printers)</option>
       <option value="approaching_eol" {% if report_type=='approaching_eol' %}selected{% endif %}>Approaching EOL</option>
       <option value="past_eol" {% if report_type=='past_eol' %}selected{% endif %}>Past EOL</option>
       <option value="inspections" {% if report_type=='inspections' %}selected{% endif %}>Inspected Assets</option>
@@ -179,6 +180,11 @@
         <th>EOL Status</th>
         <th>Inspected</th>
         <th>Inspection Date</th>
+        {% if report_type == 'routine_service_due' %}
+        <th>Last Service Date</th>
+        <th>Next Service Due</th>
+        <th>Service Due</th>
+        {% endif %}
         {% endif %}
       </tr>
     </thead>
@@ -216,11 +222,22 @@
         <td>{{ a.eol_status or '-' }}</td>
         <td>{{ 'Yes' if a.inspected_by_ict else 'No' }}</td>
         <td>{{ a.inspection_date or '-' }}</td>
+        {% if report_type == 'routine_service_due' %}
+        <td>{{ a.last_service_date or '-' }}</td>
+        <td>{{ a.routine_service_due_date or '-' }}</td>
+        <td>
+          {% if a.is_routine_service_due %}
+            <span class="badge bg-danger">Due</span>
+          {% else %}
+            <span class="badge bg-success">OK</span>
+          {% endif %}
+        </td>
+        {% endif %}
         {% endif %}
       </tr>
       {% else %}
       <tr>
-        <td colspan="{% if report_type == 'furniture_general' %}10{% else %}19{% endif %}" class="text-center">No data</td>
+        <td colspan="{% if report_type == 'furniture_general' %}10{% elif report_type == 'routine_service_due' %}22{% else %}19{% endif %}" class="text-center">No data</td>
       </tr>
       {% endfor %}
     </tbody>
