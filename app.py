@@ -14,6 +14,10 @@ import calendar
 
 app = Flask(__name__)
 
+
+def is_production():
+    return bool(os.environ.get('RENDER') or (os.environ.get('FLASK_ENV') or '').lower() == 'production')
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -22,7 +26,12 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 default_sqlite_path = (Path(app.instance_path) / 'inventory.db').resolve()
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or f"sqlite:///{default_sqlite_path.as_posix()}"
 
-app.config['SECRET_KEY'] = 'your_secret_key_here'
+_secret = os.environ.get('SECRET_KEY')
+if not _secret:
+    if is_production():
+        raise RuntimeError('SECRET_KEY environment variable is required')
+    _secret = 'dev-secret-key'
+app.config['SECRET_KEY'] = _secret
 app.config['MINISTRY_NAME'] = 'Ministry of Women Affairs, Community, Small & Medium Enterprises Development'
 app.config['LOGO_STATIC_PATH'] = '/static/zim_logo.png'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)
@@ -184,9 +193,11 @@ def bootstrap_it_admin():
     if it_exists:
         return
     username = (os.environ.get('ADMIN_IT_USERNAME') or 'admin').strip()
-    password = os.environ.get('ADMIN_IT_PASSWORD') or 'admin123'
-    if not username or not password:
-        return
+    password = os.environ.get('ADMIN_IT_PASSWORD')
+    if not password:
+        if is_production():
+            return
+        password = 'admin123'
     existing = User.query.filter_by(username=username).first()
     if existing:
         return
@@ -1803,20 +1814,6 @@ def delete_user(id):
     log_action('delete_user', 'User', user.id, user.username)
     flash('User deleted', 'success')
     return redirect(url_for('users'))
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if User.query.count() == 0:
-            admin = User(
-                username='admin',
-                password_hash=generate_password_hash('admin123'),
-                role='IT',
-                province='Head Office',
-                district=None
-            )
-            db.session.add(admin)
-            db.session.commit()
-    import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

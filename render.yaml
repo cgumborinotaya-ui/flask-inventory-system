@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: flask-inventory-system
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m gunicorn app:app --bind 0.0.0.0:$PORT
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      - key: ADMIN_IT_USERNAME
+        value: admin
+      - key: ADMIN_IT_PASSWORD
+        generateValue: true
+
+databases:
+  - name: inventory-db
+    plan: free
